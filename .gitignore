@@ -32,6 +32,9 @@ tmp/
 # =========================
 src-tauri/target/
 src-tauri/gen/
+target/
+**/target/
+
 
 # =========================
 # Docker

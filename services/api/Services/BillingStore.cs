@@ -12,8 +12,8 @@ public sealed class BillingStore
 
     public BillingStore(IConfiguration configuration)
     {
-        _connectionString = configuration["SUPABASE_DB_URL"]
-            ?? throw new InvalidOperationException("SUPABASE_DB_URL missing");
+        _connectionString = configuration["AZURE_SQL_CONNECTION"]
+            ?? throw new InvalidOperationException("AZURE_SQL_CONNECTION missing");
     }
 
     private NpgsqlConnection OpenConnection()

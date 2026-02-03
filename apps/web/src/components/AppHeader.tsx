@@ -156,32 +156,77 @@ export default function AppHeader() {
             </span>
             Clear Cache
           </button>
-          <div className="landing-pill">
-            <span
-              className={`api-status__dot ${
-                apiStatus === "online"
-                  ? "api-status__dot--online"
-                  : apiStatus === "offline"
-                    ? "api-status__dot--offline"
-                    : "api-status__dot--checking"
-              }`}
-            />
-            API {apiStatus}
-          </div>
-          <div className="landing-pill tooltip" key={`image-${imagePulse}`}>
-            <span
-              className={`api-status__dot ${
-                imageStatus === "online"
-                  ? "api-status__dot--online"
-                  : imageStatus === "offline"
-                    ? "api-status__dot--offline"
-                    : "api-status__dot--checking"
-              }`}
-            />
-            Image Engine {imageStatus}
-            <div className="tooltip__bubble">
-              <span>URL: {`${apiBase}/image-engine`}</span>
-              <span>Last check: {imageCheckedAt || "checking..."}</span>
+          <div className="status-hub" key={`status-${imagePulse}`}>
+            <div className="status-hub__trigger">
+              <span
+                className={`api-status__dot ${
+                  apiStatus === "online"
+                    ? "api-status__dot--online"
+                    : apiStatus === "offline"
+                      ? "api-status__dot--offline"
+                      : "api-status__dot--checking"
+                }`}
+              />
+              Status
+            </div>
+            <div className="status-hub__panel">
+              <div className="status-hub__row">
+                <span
+                  className={`api-status__dot ${
+                    apiStatus === "online"
+                      ? "api-status__dot--online"
+                      : apiStatus === "offline"
+                        ? "api-status__dot--offline"
+                        : "api-status__dot--checking"
+                  }`}
+                />
+                <div>
+                  <div className="status-hub__label">API</div>
+                  <div className="status-hub__meta">{apiStatus}</div>
+                </div>
+              </div>
+              <div className="status-hub__row">
+                <span
+                  className={`api-status__dot ${
+                    imageStatus === "online"
+                      ? "api-status__dot--online"
+                      : imageStatus === "offline"
+                        ? "api-status__dot--offline"
+                        : "api-status__dot--checking"
+                  }`}
+                />
+                <div>
+                  <div className="status-hub__label">Image Engine</div>
+                  <div className="status-hub__meta">{imageStatus}</div>
+                </div>
+              </div>
+              <div className="status-hub__row">
+                <span className="api-status__dot api-status__dot--online" />
+                <div>
+                  <div className="status-hub__label">PDF Engine</div>
+                  <div className="status-hub__meta">local</div>
+                </div>
+              </div>
+              <div className="status-hub__row">
+                <span className="api-status__dot api-status__dot--online" />
+                <div>
+                  <div className="status-hub__label">Tier</div>
+                  <div className="status-hub__meta">Free</div>
+                </div>
+              </div>
+              <div className="status-hub__row">
+                <span className="api-status__dot api-status__dot--online" />
+                <div>
+                  <div className="status-hub__label">Usage</div>
+                  <div className="status-hub__meta">Monthly summary</div>
+                  <Link href="/pricing" className="status-hub__link">
+                    View usage
+                  </Link>
+                </div>
+              </div>
+              <div className="status-hub__footer">
+                <span>Last check: {imageCheckedAt || "checking..."}</span>
+              </div>
             </div>
           </div>
           <Link href="/signin" className="landing-link">

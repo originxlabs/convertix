@@ -6,11 +6,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  outputFileTracingRoot: __dirname,
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.resolve.alias.canvas = false;
     }
+    config.module.rules.push({
+      test: /pdf\\.worker(\\.min)?\\.mjs$/,
+      type: "asset/resource"
+    });
     return config;
   }
 };
