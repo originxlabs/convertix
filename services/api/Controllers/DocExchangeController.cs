@@ -12,6 +12,11 @@ public class DocExchangeController : ControllerBase
         public IFormFile? File { get; set; }
     }
 
+    public sealed class PdfToPagesRequest
+    {
+        public IFormFile? File { get; set; }
+    }
+
     [HttpPost("pdf-to-word")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> PdfToWord([FromForm] PdfToWordRequest request)
@@ -42,6 +47,52 @@ public class DocExchangeController : ControllerBase
 
         var bytes = await System.IO.File.ReadAllBytesAsync(docxPath);
         return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "converted.docx");
+    }
+
+    [HttpPost("pdf-to-pages")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> PdfToPages([FromForm] PdfToPagesRequest request)
+    {
+        if (request.File is null)
+        {
+            return BadRequest("Missing PDF.");
+        }
+
+        if (!OperatingSystem.IsMacOS())
+        {
+            return StatusCode(StatusCodes.Status501NotImplemented,
+                "PDF to Pages is only supported on macOS with Pages installed.");
+        }
+
+        var workDir = CreateWorkDir();
+        var inputPath = await SaveFormFile(request.File, workDir, ".pdf");
+        var outputPath = Path.Combine(workDir, "converted.pages");
+
+        var safeInput = inputPath.Replace("\"", "\\\"");
+        var safeOutput = outputPath.Replace("\"", "\\\"");
+        var script =
+            "tell application \"Pages\"\n" +
+            "  activate\n" +
+            $"  set theDoc to open POSIX file \"{safeInput}\"\n" +
+            "  delay 1\n" +
+            $"  export theDoc to POSIX file \"{safeOutput}\" as Pages\n" +
+            "  close theDoc saving no\n" +
+            "end tell\n";
+
+        var args = new[] { "-e", script };
+        var result = RunProcess("osascript", args, workDir, out var error);
+        if (!result)
+        {
+            return Problem($"Pages export failed: {error}");
+        }
+
+        if (!System.IO.File.Exists(outputPath))
+        {
+            return Problem("Pages export failed: output file not created.");
+        }
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(outputPath);
+        return File(bytes, "application/vnd.apple.pages", "converted.pages");
     }
 
     private static string CreateWorkDir()

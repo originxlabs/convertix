@@ -12,7 +12,9 @@ const buttonVariants = cva(
         default: "bg-ink-900 text-white hover:bg-ink-800",
         secondary: "bg-obsidian-100 text-ink-900 hover:bg-obsidian-200",
         ghost: "bg-transparent text-ink-900 hover:bg-obsidian-100",
-        glass: "bg-white/70 text-ink-900 shadow-sm ring-1 ring-obsidian-200 hover:bg-white"
+        glass: "bg-white/70 text-ink-900 shadow-sm ring-1 ring-obsidian-200 hover:bg-white",
+        premium:
+          "bg-gradient-to-r from-ink-900 via-ink-800 to-obsidian-800 text-white shadow-lg shadow-ink-900/20 ring-1 ring-ink-900/20 hover:from-ink-800 hover:to-obsidian-700"
       },
       size: {
         default: "h-9 px-4",

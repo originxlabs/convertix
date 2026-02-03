@@ -1,24 +1,46 @@
-# Node
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+.vscode/
+
+# =========================
+# Node / Next.js
+# =========================
 node_modules/
 .next/
+out/
+dist/
 
-# .NET
-bin/
-obj/
-
-# OS
-.DS_Store
-
-# PDF temp
-*.pdf
-
-
+# =========================
+# Environment / Secrets
+# =========================
 .env
 .env.*
-!.env.example
+*.local
 
-.vscode/*
+# =========================
+# Logs / Temp
+# =========================
+logs/
+*.log
+tmp/
+.temp/
 
-!.vscode/extensions.json
-!.vscode/launch.json
-!.vscode/tasks.json
+# =========================
+# Tauri / Rust
+# =========================
+src-tauri/target/
+src-tauri/gen/
+
+# =========================
+# Docker
+# =========================
+**/.docker/
+docker-compose.override.yml
+
+# =========================
+# .NET build artifacts
+# =========================
+bin/
+obj/

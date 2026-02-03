@@ -1,0 +1,28 @@
+[package]
+name = "convertix-desktop"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+async-trait = "0.1"
+aes-gcm = "0.10"
+base64 = "0.22"
+rand = "0.8"
+keyring = "2.3"
+toml = "0.8"
+tauri = { version = "2.5.4" }
+tauri-plugin-dialog = "2.2.0"
+thiserror = "1.0"
+uuid = { version = "1.8", features = ["v4", "serde"] }
+directories = "5.0"
+tokio = { version = "1.37", features = ["sync", "rt", "macros", "time", "process"] }
+sha2 = "0.10"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+[build-dependencies]
+tauri-build = { version = "2.5.4", features = [] }

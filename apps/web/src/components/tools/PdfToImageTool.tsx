@@ -22,20 +22,34 @@ export default function PdfToImageTool() {
   const [format, setFormat] = useState<ExportFormat>("image/png");
   const [quality, setQuality] = useState(0.9);
   const [status, setStatus] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const MAX_BYTES = 200 * 1024 * 1024;
 
   const handlePick = () => fileInputRef.current?.click();
 
   const handleFile = async (file: File) => {
+    if (file.type !== "application/pdf") {
+      setStatus("Only PDF files are supported.");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setStatus("File is too large (max 200 MB).");
+      return;
+    }
     const buffer = await file.arrayBuffer();
     const loadingTask = getDocument({ data: buffer });
     const loaded = await loadingTask.promise;
     setPdfDoc(loaded);
     setFileName(file.name.replace(/\.[^.]+$/, ""));
+    setStatus(null);
   };
 
   const handleConvert = async () => {
     if (!pdfDoc) return;
     setStatus("Rendering pages...");
+    setProgress(0);
     for (let pageIndex = 1; pageIndex <= pdfDoc.numPages; pageIndex += 1) {
       const page = await pdfDoc.getPage(pageIndex);
       const viewport = page.getViewport({ scale });
@@ -60,6 +74,7 @@ export default function PdfToImageTool() {
       link.download = `${exportName}.${format === "image/png" ? "png" : "jpg"}`;
       link.click();
       URL.revokeObjectURL(link.href);
+      setProgress(Math.round((pageIndex / pdfDoc.numPages) * 100));
     }
     setStatus("All pages exported.");
     setTimeout(() => setStatus(null), 2500);
@@ -89,7 +104,24 @@ export default function PdfToImageTool() {
             if (file) void handleFile(file);
           }}
         />
-        <div className="mt-6 rounded-2xl border border-dashed border-obsidian-200 bg-obsidian-50 p-6 text-sm text-obsidian-500">
+        <div
+          className={`mt-6 rounded-2xl border border-dashed p-6 text-sm text-obsidian-500 transition ${
+            isDragging
+              ? "border-ink-900/60 bg-white"
+              : "border-obsidian-200 bg-obsidian-50"
+          }`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+            const file = event.dataTransfer.files?.[0];
+            if (file) void handleFile(file);
+          }}
+        >
           {pdfDoc ? `${pdfDoc.numPages} pages ready to export.` : "Upload a PDF to begin."}
         </div>
       </div>
@@ -134,9 +166,17 @@ export default function PdfToImageTool() {
               />
             </label>
           )}
-          <Button onClick={handleConvert} disabled={!pdfDoc}>
+          <Button variant="premium" onClick={handleConvert} disabled={!pdfDoc}>
             Convert & Download
           </Button>
+          {progress > 0 && progress < 100 && (
+            <div className="h-2 w-full overflow-hidden rounded-full bg-obsidian-200">
+              <div
+                className="h-full rounded-full bg-ink-900 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
           {status && <div className="text-xs text-obsidian-500">{status}</div>}
         </div>
       </div>

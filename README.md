@@ -1,27 +1,12 @@
-# PDF Editor (Web)
+# CONVERTIX Monorepo
 
-Monorepo layout:
-- `apps/web`: Next.js + shadcn/ui + Konva overlay layer
-- `services/api`: ASP.NET Core 10 Web API (C# 14)
-- `services/pdf-engine`: placeholder for pdfcpu CLI wrapper
+## Structure & Boundaries
+- `apps/` contains deployable UI applications only. Web UI must not import backend services. Desktop UI only talks to `apps/desktop/src-tauri` via Tauri IPC.
+- `services/` contains backend services only. Backend must not import UI code.
+- `packages/` contains shared libraries and contracts only. They should be framework-agnostic and safe to share across apps/services.
+- `infra/` contains deployment configs and infrastructure assets only.
 
-## Quick start (after deps install)
-
-### Web
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-### API
-```bash
-cd services/api
-dotnet restore
-dotnet run
-```
-
-## Notes
-- PDF rendering uses `pdfjs-dist` on the client.
-- Editing overlay uses `konva` via `react-konva`.
-- Export calls API endpoints that run `pdfcpu` to apply edits and return the final PDF.
+## Deployments
+- `apps/web` -> Vercel
+- `apps/desktop/src-tauri` -> Desktop build (Tauri)
+- `services/*` -> Cloud-hosted

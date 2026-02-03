@@ -1,0 +1,52 @@
+{
+  "tiers": {
+    "free": {
+      "requires_sign_in": true,
+      "monthly_limits": {
+        "images": 10,
+        "videos": 5,
+        "slides": 5,
+        "mindmaps": 5,
+        "other_generations": 5
+      },
+      "pdf_features": "basic",
+      "image_features": "deterministic",
+      "noteflow": {
+        "limited_notebooks": true,
+        "unlimited_generations": false
+      }
+    },
+    "pro": {
+      "requires_sign_in": true,
+      "requires_activation": true,
+      "monthly_limits": null,
+      "pdf_features": "advanced",
+      "image_features": "full",
+      "noteflow": {
+        "limited_notebooks": false,
+        "unlimited_generations": true,
+        "higher_context": true
+      },
+      "metered_ai": true
+    },
+    "premium": {
+      "requires_sign_in": true,
+      "requires_activation": true,
+      "monthly_limits": null,
+      "pdf_features": "advanced+enterprise",
+      "image_features": "full",
+      "noteflow": {
+        "limited_notebooks": false,
+        "unlimited_generations": true,
+        "higher_context": true
+      },
+      "metered_ai": true,
+      "enterprise": {
+        "org_bound": true,
+        "team_support": true,
+        "priority_routing": true,
+        "private_llm": true
+      }
+    }
+  }
+}

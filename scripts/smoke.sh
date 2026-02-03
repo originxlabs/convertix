@@ -64,6 +64,8 @@ create_png "$IMG1"
 printf "API base: %s\n" "$API_BASE"
 
 request "GET /health" "$API_BASE/health"
+request "GET /api/image/health" "$API_BASE/api/image/health"
+request "GET /image-engine/health" "$API_BASE/image-engine/health"
 request "POST /api/session" -X POST "$API_BASE/api/session"
 
 UPLOAD_JSON_PATH="$TMP_DIR/upload.json"
@@ -144,6 +146,86 @@ request "POST /api/pdf/pdf-to-word" -X POST \
   -F "file=@$PDF1" \
   "$API_BASE/api/pdf/pdf-to-word"
 
+if [ "$(uname -s)" = "Darwin" ] && command -v osascript >/dev/null 2>&1; then
+  request "POST /api/pdf/pdf-to-pages" -X POST \
+    -F "file=@$PDF1" \
+    "$API_BASE/api/pdf/pdf-to-pages"
+else
+  echo "Skipping /api/pdf/pdf-to-pages (macOS + Pages required)"
+fi
+
 request "POST /api/convert/image-to-pdf" -X POST \
   -F "files=@$IMG1" \
   "$API_BASE/api/convert/image-to-pdf"
+
+# Image Labs (non-AI)
+request "POST /api/image/process (compress)" -X POST \
+  -F "file=@$IMG1" \
+  -F "operation=compress" \
+  -F "quality=80" \
+  "$API_BASE/api/image/process"
+
+request "POST /api/image/process (resize)" -X POST \
+  -F "file=@$IMG1" \
+  -F "operation=resize" \
+  -F "width=64" \
+  -F "height=64" \
+  "$API_BASE/api/image/process"
+
+request "POST /api/image/process (crop)" -X POST \
+  -F "file=@$IMG1" \
+  -F "operation=crop" \
+  -F "left=0" \
+  -F "top=0" \
+  -F "width=1" \
+  -F "height=1" \
+  "$API_BASE/api/image/process"
+
+request "POST /api/image/process (rotate)" -X POST \
+  -F "file=@$IMG1" \
+  -F "operation=rotate" \
+  -F "angle=90" \
+  "$API_BASE/api/image/process"
+
+request "POST /api/image/process (to-jpg)" -X POST \
+  -F "file=@$IMG1" \
+  -F "operation=convert-to-jpg" \
+  "$API_BASE/api/image/process"
+
+request "POST /api/image/process (from-jpg)" -X POST \
+  -F "file=@$IMG1" \
+  -F "operation=convert-from-jpg" \
+  -F "format=png" \
+  "$API_BASE/api/image/process"
+
+if [ "${RUN_HTML_IMAGE:-0}" = "1" ]; then
+  request "POST /api/image/html-to-image" -X POST \
+    -H "Content-Type: application/json" \
+    -d '{"url":"https://example.com","format":"png"}' \
+    "$API_BASE/api/image/html-to-image"
+else
+  echo "Skipping /api/image/html-to-image (set RUN_HTML_IMAGE=1 to enable)"
+fi
+
+if [ "${TIER:-free}" != "free" ] && [ -n "${IMAGEAI_REMOVE_BG_KEY:-}" ] && [ -n "${IMAGEAI_DEEPAI_KEY:-}" ] && [ -n "${IMAGEAI_GOOGLE_VISION_KEY:-}" ] && [ -n "${IMAGEAI_IMGFLIP_USER:-}" ] && [ -n "${IMAGEAI_IMGFLIP_PASSWORD:-}" ]; then
+  request "POST /api/image/remove-bg" -X POST \
+    -F "file=@$IMG1" \
+    "$API_BASE/api/image/remove-bg"
+
+  request "POST /api/image/upscale" -X POST \
+    -F "file=@$IMG1" \
+    "$API_BASE/api/image/upscale"
+
+  request "POST /api/image/blur-face" -X POST \
+    -F "file=@$IMG1" \
+    "$API_BASE/api/image/blur-face"
+
+  request "POST /api/image/meme" -X POST \
+    -F "file=@$IMG1" \
+    -F "templateId=61579" \
+    -F "topText=Convertix" \
+    -F "bottomText=AI Meme" \
+    "$API_BASE/api/image/meme"
+else
+  echo "Skipping AI image endpoints (set TIER=pro and API keys to enable)"
+fi

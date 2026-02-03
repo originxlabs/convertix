@@ -1,0 +1,68 @@
+{
+  "gates": [
+    {
+      "feature": "pdf.basic",
+      "min_tier": "Free",
+      "offline_allowed": true,
+      "requires_license": false,
+      "usage_key": null,
+      "monthly_limit": null
+    },
+    {
+      "feature": "pdf.advanced",
+      "min_tier": "Pro",
+      "offline_allowed": true,
+      "requires_license": true,
+      "usage_key": null,
+      "monthly_limit": null
+    },
+    {
+      "feature": "image.deterministic",
+      "min_tier": "Free",
+      "offline_allowed": true,
+      "requires_license": false,
+      "usage_key": "images",
+      "monthly_limit": 10
+    },
+    {
+      "feature": "image.ai",
+      "min_tier": "Pro",
+      "offline_allowed": false,
+      "requires_license": true,
+      "usage_key": "images",
+      "monthly_limit": null
+    },
+    {
+      "feature": "noteflow.generations",
+      "min_tier": "Free",
+      "offline_allowed": true,
+      "requires_license": false,
+      "usage_key": "other_generations",
+      "monthly_limit": 5
+    },
+    {
+      "feature": "video.generations",
+      "min_tier": "Free",
+      "offline_allowed": false,
+      "requires_license": false,
+      "usage_key": "videos",
+      "monthly_limit": 5
+    },
+    {
+      "feature": "slides.generations",
+      "min_tier": "Free",
+      "offline_allowed": false,
+      "requires_license": false,
+      "usage_key": "slides",
+      "monthly_limit": 5
+    },
+    {
+      "feature": "mindmaps.generations",
+      "min_tier": "Free",
+      "offline_allowed": true,
+      "requires_license": false,
+      "usage_key": "mindmaps",
+      "monthly_limit": 5
+    }
+  ]
+}

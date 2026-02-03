@@ -48,6 +48,22 @@ const tools: Array<{
     icon: "split"
   },
   {
+    title: "Remove Pages",
+    description: "Delete pages from a PDF.",
+    href: "/tools/remove-pages",
+    category: ["edit"],
+    badge: "Coming",
+    icon: "organize"
+  },
+  {
+    title: "Extract Pages",
+    description: "Export selected pages into a new PDF.",
+    href: "/tools/extract-pages",
+    category: ["edit"],
+    badge: "Coming",
+    icon: "organize"
+  },
+  {
     title: "Compress PDF",
     description: "Reduce file size without losing quality.",
     href: "/tools/compress-pdf",
@@ -56,11 +72,35 @@ const tools: Array<{
     icon: "compress"
   },
   {
+    title: "Repair PDF",
+    description: "Fix broken PDFs and recover structure.",
+    href: "/tools/repair-pdf",
+    category: ["optimize"],
+    badge: "Coming",
+    icon: "compress"
+  },
+  {
     title: "PDF to Word",
     description: "Export to editable DOCX format.",
     href: "/tools/pdf-to-word",
     category: ["convert"],
     badge: "Live",
+    icon: "pdf-to-word"
+  },
+  {
+    title: "PDF to Pages",
+    description: "Convert PDFs into Apple Pages files (macOS only).",
+    href: "/tools/pdf-to-pages",
+    category: ["convert"],
+    badge: "Mac",
+    icon: "pdf-to-word"
+  },
+  {
+    title: "PDF to Pages",
+    description: "Convert PDFs into Apple Pages files (macOS only).",
+    href: "/tools/pdf-to-pages",
+    category: ["convert"],
+    badge: "Mac",
     icon: "pdf-to-word"
   },
   {
@@ -97,6 +137,14 @@ const tools: Array<{
     href: "/tools/excel-to-pdf",
     category: ["convert"],
     icon: "excel-to-pdf"
+  },
+  {
+    title: "HTML to PDF",
+    description: "Convert web pages into PDF.",
+    href: "/tools/html-to-pdf",
+    category: ["convert"],
+    badge: "Coming",
+    icon: "word-to-pdf"
   },
   {
     title: "PDF to JPG",
@@ -139,6 +187,30 @@ const tools: Array<{
     icon: "organize"
   },
   {
+    title: "Rotate PDF",
+    description: "Rotate pages for correct orientation.",
+    href: "/tools/rotate-pdf",
+    category: ["edit"],
+    badge: "Coming",
+    icon: "organize"
+  },
+  {
+    title: "Add Page Numbers",
+    description: "Insert page numbers into a PDF.",
+    href: "/tools/add-page-numbers",
+    category: ["edit"],
+    badge: "Coming",
+    icon: "edit"
+  },
+  {
+    title: "Add Watermark",
+    description: "Stamp watermarks across pages.",
+    href: "/tools/add-watermark",
+    category: ["edit"],
+    badge: "Coming",
+    icon: "edit"
+  },
+  {
     title: "Sign PDF",
     description: "Add signature stamps with precision.",
     href: "/tools/sign-pdf",
@@ -153,6 +225,22 @@ const tools: Array<{
     category: ["edit"],
     badge: "Live",
     icon: "crop"
+  },
+  {
+    title: "Redact PDF",
+    description: "Permanently remove sensitive content.",
+    href: "/tools/redact-pdf",
+    category: ["security"],
+    badge: "Coming",
+    icon: "protect"
+  },
+  {
+    title: "Compare PDF",
+    description: "Diff two PDFs for changes.",
+    href: "/tools/compare-pdf",
+    category: ["security"],
+    badge: "Coming",
+    icon: "protect"
   },
   {
     title: "PDF to PDF/A",

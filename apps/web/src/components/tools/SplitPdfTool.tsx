@@ -14,6 +14,10 @@ export default function SplitPdfTool() {
   const [span, setSpan] = useState(1);
   const [pages, setPages] = useState("2,4,10");
   const [status, setStatus] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const MAX_BYTES = 200 * 1024 * 1024;
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5055",
@@ -24,7 +28,16 @@ export default function SplitPdfTool() {
 
   const handleSplit = async () => {
     if (!file) return;
+    if (file.type !== "application/pdf") {
+      setStatus("Only PDF files are supported.");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setStatus("File is too large (max 200 MB).");
+      return;
+    }
     setStatus("Splitting PDF...");
+    setProgress(0);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("mode", mode);
@@ -33,15 +46,30 @@ export default function SplitPdfTool() {
     } else {
       formData.append("pages", pages);
     }
-    const response = await fetch(`${apiBase}/api/pdf/split`, {
-      method: "POST",
-      body: formData
+    const blob = await new Promise<Blob | null>((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${apiBase}/api/pdf/split`);
+      xhr.responseType = "blob";
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return;
+        setProgress(Math.round((event.loaded / event.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status < 200 || xhr.status >= 300) {
+          const message = xhr.responseText || "Split failed.";
+          setStatus(message);
+          resolve(null);
+          return;
+        }
+        resolve(xhr.response);
+      };
+      xhr.onerror = () => {
+        setStatus("Split failed.");
+        resolve(null);
+      };
+      xhr.send(formData);
     });
-    if (!response.ok) {
-      setStatus("Split failed.");
-      return;
-    }
-    const blob = await response.blob();
+    if (!blob) return;
     await saveHistoryItem({
       name: `split-${new Date().toISOString().slice(0, 10)}`,
       blob,
@@ -77,7 +105,23 @@ export default function SplitPdfTool() {
           className="hidden"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
-        <div className="mt-6 grid gap-4 text-sm text-ink-900">
+        <div
+          className={`mt-6 grid gap-4 text-sm text-ink-900 rounded-2xl border border-dashed p-4 transition ${
+            isDragging
+              ? "border-ink-900/60 bg-white"
+              : "border-obsidian-200 bg-obsidian-50"
+          }`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+            setFile(event.dataTransfer.files?.[0] ?? null);
+          }}
+        >
           <label className="flex flex-col gap-2">
             Mode
             <select
@@ -120,9 +164,17 @@ export default function SplitPdfTool() {
           <div className="rounded-2xl bg-white px-4 py-3">
             Split PDFs are delivered as a ZIP archive.
           </div>
-          <Button onClick={handleSplit} disabled={!file}>
+          <Button variant="premium" onClick={handleSplit} disabled={!file}>
             Split PDF
           </Button>
+          {progress > 0 && progress < 100 && (
+            <div className="h-2 w-full overflow-hidden rounded-full bg-obsidian-200">
+              <div
+                className="h-full rounded-full bg-ink-900 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
           {status && <div className="text-xs text-obsidian-500">{status}</div>}
         </div>
       </div>

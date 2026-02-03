@@ -9,6 +9,10 @@ export default function PdfToWordTool() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const MAX_BYTES = 200 * 1024 * 1024;
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5055",
@@ -19,18 +23,42 @@ export default function PdfToWordTool() {
 
   const handleConvert = async () => {
     if (!file) return;
-    setStatus("Converting to DOCX...");
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch(`${apiBase}/api/pdf/pdf-to-word`, {
-      method: "POST",
-      body: formData
-    });
-    if (!response.ok) {
-      setStatus("Conversion failed.");
+    if (file.type !== "application/pdf") {
+      setStatus("Only PDF files are supported.");
       return;
     }
-    const blob = await response.blob();
+    if (file.size > MAX_BYTES) {
+      setStatus("File is too large (max 200 MB).");
+      return;
+    }
+    setStatus("Converting to DOCX...");
+    setProgress(0);
+    const formData = new FormData();
+    formData.append("file", file);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${apiBase}/api/pdf/pdf-to-word`);
+      xhr.responseType = "blob";
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return;
+        setProgress(Math.round((event.loaded / event.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status < 200 || xhr.status >= 300) {
+          const message = xhr.responseText || "Conversion failed.";
+          setStatus(message);
+          resolve(null);
+          return;
+        }
+        resolve(xhr.response);
+      };
+      xhr.onerror = () => {
+        setStatus("Conversion failed.");
+        resolve(null);
+      };
+      xhr.send(formData);
+    });
+    if (!blob) return;
     await saveHistoryItem({
       name: `pdf-to-word-${new Date().toISOString().slice(0, 10)}`,
       blob,
@@ -66,7 +94,23 @@ export default function PdfToWordTool() {
           className="hidden"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
-        <div className="mt-6 rounded-2xl border border-dashed border-obsidian-200 bg-obsidian-50 p-6 text-sm text-obsidian-500">
+        <div
+          className={`mt-6 rounded-2xl border border-dashed p-6 text-sm text-obsidian-500 transition ${
+            isDragging
+              ? "border-ink-900/60 bg-white"
+              : "border-obsidian-200 bg-obsidian-50"
+          }`}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+            setFile(event.dataTransfer.files?.[0] ?? null);
+          }}
+        >
           {file ? `${file.name} ready for conversion.` : "Upload a PDF to convert to Word."}
         </div>
       </div>
@@ -77,9 +121,17 @@ export default function PdfToWordTool() {
           <div className="rounded-2xl bg-white px-4 py-3">
             Conversion preserves text layout where possible.
           </div>
-          <Button onClick={handleConvert} disabled={!file}>
+          <Button variant="premium" onClick={handleConvert} disabled={!file}>
             Convert to DOCX
           </Button>
+          {progress > 0 && progress < 100 && (
+            <div className="h-2 w-full overflow-hidden rounded-full bg-obsidian-200">
+              <div
+                className="h-full rounded-full bg-ink-900 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
           {status && <div className="text-xs text-obsidian-500">{status}</div>}
         </div>
       </div>

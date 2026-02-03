@@ -8,6 +8,12 @@ const tools = [
     description: "Export PDFs into DOCX for editing.",
     href: "/tools/pdf-to-word",
     icon: "pdf-to-word"
+  },
+  {
+    title: "PDF to Pages",
+    description: "Convert PDFs into Apple Pages files (macOS only).",
+    href: "/tools/pdf-to-pages",
+    icon: "pdf-to-word"
   }
 ];
 
