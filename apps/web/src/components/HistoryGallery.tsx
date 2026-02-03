@@ -3,16 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { deleteHistoryItem, getHistoryBlob, getHistoryItems } from "@/lib/historyStore";
-
-type HistoryMeta = {
-  id: string;
-  name: string;
-  type: string;
-  kind: "pdf" | "image" | "archive" | "doc";
-  size: number;
-  createdAt: string;
-};
+import { deleteHistoryItem, getHistoryBlob, getHistoryItems, type HistoryMeta } from "@/lib/historyStore";
 
 export default function HistoryGallery() {
   const [items, setItems] = useState<HistoryMeta[]>([]);
@@ -100,7 +91,9 @@ export default function HistoryGallery() {
                         ? "DOCX export"
                         : item.kind === "archive"
                           ? "ZIP export"
-                          : "Image export"}{" "}
+                          : item.kind === "pages"
+                            ? "Pages export"
+                            : "Image export"}{" "}
                     •{" "}
                     {new Date(item.createdAt).toLocaleString()}
                   </p>
@@ -118,6 +111,8 @@ export default function HistoryGallery() {
                       ? "ZIP Ready"
                       : item.kind === "doc"
                         ? "DOCX Ready"
+                        : item.kind === "pages"
+                          ? "Pages Ready"
                         : "PDF Ready"}
                   </div>
                 )}

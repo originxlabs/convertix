@@ -168,8 +168,9 @@ export default function PdfFabricStage({
     const { canvas, fabric } = handle;
 
     const existing = new Map<string, FabricObject>();
-    canvas.getObjects().forEach((obj) => {
-      const fabricObj = obj as FabricObject;
+    const objects = canvas.getObjects() as FabricObject[];
+    objects.forEach((obj) => {
+      const fabricObj = obj;
       if (fabricObj.overlayId) {
         existing.set(fabricObj.overlayId, fabricObj);
       }
@@ -239,7 +240,7 @@ export default function PdfFabricStage({
           (overlay as { src?: string; data?: string }).src ??
             (overlay as { data?: string }).data ??
             "",
-          (img) => {
+          (img: any) => {
             const fabricImg = img as any;
             fabricImg.overlayId = overlay.id;
             fabricImg.set({
@@ -288,8 +289,9 @@ export default function PdfFabricStage({
       }
     });
 
-    canvas.getObjects().forEach((obj) => {
-      const fabricObj = obj as FabricObject;
+    const allObjects = canvas.getObjects() as FabricObject[];
+    allObjects.forEach((obj) => {
+      const fabricObj = obj;
       if (fabricObj.overlayId && !nextIds.has(fabricObj.overlayId)) {
         canvas.remove(fabricObj);
       }
@@ -297,9 +299,7 @@ export default function PdfFabricStage({
 
     if (selectedId) {
       const selected = existing.get(selectedId) ??
-        (canvas.getObjects().find((obj) => (obj as FabricObject).overlayId === selectedId) as
-          | FabricObject
-          | undefined);
+        (allObjects.find((obj) => obj.overlayId === selectedId) as FabricObject | undefined);
       if (selected) {
         canvas.setActiveObject(selected);
       }

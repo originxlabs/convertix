@@ -1,8 +1,15 @@
 import AppFooter from "@/components/AppFooter";
 import AppHeader from "@/components/AppHeader";
 import ToolCard from "@/components/ToolCard";
+import type { ToolIconName } from "@/components/ToolIcon";
 
-const tools = [
+const tools: Array<{
+  title: string;
+  description: string;
+  href: string;
+  icon: ToolIconName;
+  badge?: string;
+}> = [
   {
     title: "PDF to Word",
     description: "Export PDFs into DOCX for editing.",
@@ -13,7 +20,8 @@ const tools = [
     title: "PDF to Pages",
     description: "Convert PDFs into Apple Pages files (macOS only).",
     href: "/tools/pdf-to-pages",
-    icon: "pdf-to-word"
+    icon: "pdf-to-word",
+    badge: "macOS only"
   }
 ];
 

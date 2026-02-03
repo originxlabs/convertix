@@ -12,17 +12,18 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 15% 20%, rgba(31, 111, 235, 0.12), transparent 45%),
-    radial-gradient(circle at 85% 0%, rgba(91, 231, 196, 0.16), transparent 40%),
-    linear-gradient(180deg, #f7f8fb 0%, #eef1f7 45%, #f9fafc 100%);
+  background: linear-gradient(180deg, #f9f8f6 0%, #f2f3f5 60%, #fafbfc 100%);
+  color: #101115;
+  font-family: var(--font-sans, "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
 }
 
 .landing-shell {
   position: relative;
   min-height: 100vh;
-  background: #f6f4f1;
+  background: transparent;
   color: #101115;
   overflow: hidden;
 }
@@ -34,20 +35,22 @@ body {
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
-  opacity: 0.35;
-  animation: noiseShift 12s steps(2) infinite;
+  opacity: 0.12;
 }
 
 .landing-nav {
   position: sticky;
-  top: 16px;
+  top: 14px;
   z-index: 20;
-  border-bottom: 1px solid rgba(22, 24, 28, 0.06);
-  backdrop-filter: blur(18px);
-  background: rgba(246, 244, 241, 0.72);
-  box-shadow: 0 12px 30px rgba(16, 17, 21, 0.06);
-  border-radius: 20px;
-  margin: 0 16px;
+  border: 1px solid rgba(16, 17, 21, 0.08);
+  backdrop-filter: blur(16px);
+  background: rgba(252, 252, 250, 0.7);
+  box-shadow:
+    0 10px 30px rgba(16, 17, 21, 0.08),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
+  margin: 0 18px;
+  transition: background 0.18s ease-out, box-shadow 0.18s ease-out;
 }
 
 .landing-nav__inner {
@@ -56,8 +59,8 @@ body {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 16px;
-  padding: 14px 22px;
+  gap: 14px;
+  padding: 12px 20px;
 }
 
 .landing-nav__brand {
@@ -76,7 +79,7 @@ body {
 
 .landing-nav__center {
   display: none;
-  gap: 22px;
+  gap: 20px;
   justify-content: center;
   align-items: center;
   font-size: 12px;
@@ -87,7 +90,7 @@ body {
 .landing-nav__right {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   font-size: 12px;
   flex-wrap: nowrap;
@@ -100,7 +103,7 @@ body {
   gap: 8px;
   color: rgba(16, 17, 21, 0.75);
   font-weight: 500;
-  transition: color 0.2s ease;
+  transition: color 0.16s ease-out;
 }
 
 .landing-link:hover {
@@ -114,11 +117,10 @@ body {
   padding: 7px 12px;
   border-radius: 999px;
   border: 1px solid rgba(16, 17, 21, 0.12);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.65);
   font-size: 11px;
   color: rgba(16, 17, 21, 0.7);
-  transition: transform 0.2s ease, border-color 0.2s ease;
-  animation: statusPulse 0.8s ease;
+  transition: transform 0.16s ease-out, border-color 0.16s ease-out;
 }
 
 .nav-icon {
@@ -128,7 +130,7 @@ body {
   align-items: center;
   justify-content: center;
   color: rgba(16, 17, 21, 0.55);
-  transition: transform 0.25s ease, color 0.25s ease;
+  transition: transform 0.16s ease-out, color 0.16s ease-out;
 }
 
 .nav-icon svg {
@@ -153,7 +155,7 @@ body {
   color: #f7f4ef;
   font-size: 12px;
   font-weight: 600;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform 0.16s ease-out, background 0.16s ease-out;
   white-space: nowrap;
 }
 
@@ -182,7 +184,7 @@ body {
   min-height: 80vh;
   max-width: 880px;
   margin: 0 auto;
-  padding: 140px 24px 90px;
+  padding: 160px 24px 90px;
   text-align: center;
 }
 
@@ -196,7 +198,7 @@ body {
 
 .landing-headline {
   margin-top: 22px;
-  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  font-size: clamp(2.7rem, 6vw, 4.9rem);
   line-height: 1.03;
   font-family: var(--font-display);
   letter-spacing: -0.02em;
@@ -221,6 +223,37 @@ body {
   margin-top: 18px;
   display: flex;
   justify-content: center;
+}
+
+.landing-hero__downloads {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.download-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 17, 21, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  color: rgba(16, 17, 21, 0.7);
+  transition: transform 0.16s ease-out, border-color 0.16s ease-out;
+}
+
+.download-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(16, 17, 21, 0.2);
+}
+
+.download-chip svg {
+  width: 14px;
+  height: 14px;
 }
 
 .landing-section {
@@ -248,16 +281,16 @@ body {
 
 .studio-card {
   border-radius: 24px;
-  border: 1px solid rgba(16, 17, 21, 0.08);
+  border: 1px solid rgba(16, 17, 21, 0.04);
   padding: 28px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 30px rgba(16, 17, 21, 0.05);
-  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 28px rgba(16, 17, 21, 0.06);
+  transition: transform 0.16s ease-out, box-shadow 0.16s ease-out;
 }
 
 .studio-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 45px rgba(16, 17, 21, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(16, 17, 21, 0.08);
 }
 
 .status-hub {
@@ -271,10 +304,11 @@ body {
   padding: 7px 12px;
   border-radius: 999px;
   border: 1px solid rgba(16, 17, 21, 0.12);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.65);
   font-size: 11px;
   color: rgba(16, 17, 21, 0.7);
   cursor: pointer;
+  transition: border-color 0.16s ease-out, background 0.16s ease-out;
 }
 
 .status-hub__panel {
@@ -284,13 +318,14 @@ body {
   width: 220px;
   padding: 12px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(16, 17, 21, 0.08);
-  box-shadow: 0 18px 50px rgba(16, 17, 21, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(16, 17, 21, 0.06);
+  box-shadow: 0 18px 50px rgba(16, 17, 21, 0.1);
+  backdrop-filter: blur(12px);
   opacity: 0;
   transform: translateY(6px);
   pointer-events: none;
-  transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+  transition: opacity 0.16s ease-out, transform 0.16s ease-out;
 }
 
 .status-hub:hover .status-hub__panel,
@@ -490,6 +525,13 @@ body {
   }
   .landing-nav__right {
     gap: 10px;
+  }
+  .landing-nav {
+    margin: 0 12px;
+    top: 10px;
+  }
+  .landing-hero {
+    padding: 140px 20px 80px;
   }
 }
 

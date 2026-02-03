@@ -11,26 +11,43 @@ export default function Home() {
       <AppHeader />
 
       <section className="landing-hero">
-        <p className="landing-eyebrow">Studio-grade infrastructure</p>
-        <h1 className="landing-headline">
+        <p className="landing-eyebrow fade-in">Studio-grade infrastructure</p>
+        <h1 className="landing-headline fade-in">
           Transform documents.
           <br />
           Images.
           <br />
           And knowledge.
         </h1>
-        <p className="landing-subhead">
+        <p className="landing-subhead fade-in">
           CONVERTIX is a studio-grade platform for PDFs, images, and AI-powered notes — built for professionals.
         </p>
-        <div className="landing-hero__status">
+        <div className="landing-hero__status fade-in">
           <span className="landing-pill">Image Engine status is available in the header.</span>
         </div>
-        <div className="landing-hero__actions">
+        <div className="landing-hero__actions fade-in">
           <Link href="/get-started" className="landing-cta">
             Get started free
           </Link>
           <Link href="/studios" className="landing-ghost">
             View studios →
+          </Link>
+        </div>
+        <div className="landing-hero__downloads fade-in">
+          <Link href="/get-started" className="download-chip" aria-label="Download for Windows">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 4h8v8H3V4zm10 0h8v8h-8V4zM3 14h8v6H3v-6zm10 0h8v6h-8v-6z" fill="currentColor" />
+            </svg>
+            Download for Windows
+          </Link>
+          <Link href="/get-started" className="download-chip" aria-label="Download for macOS (Apple Silicon)">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M16.7 6.2c-1.1 0-2.3.7-3 1.7-.6.8-1.1 2-1 3.1 1.1.1 2.3-.6 3-1.6.6-.9 1-2.1 1-3.2zm3.1 6.3c-.1-2.5 2-3.7 2-3.8-1.1-1.6-2.7-1.8-3.3-1.8-1.4-.2-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.7 2.9-.4 7.3 1.2 9.6.8 1.1 1.8 2.4 3 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.7-2.2.9-1.3 1.3-2.6 1.3-2.6-.1 0-2.4-.9-2.5-3.8z"
+                fill="currentColor"
+              />
+            </svg>
+            Download for macOS
           </Link>
         </div>
       </section>

@@ -19,10 +19,7 @@ const PdfFabricStage = dynamic(() => import("@/components/pdf/PdfFabricStage"), 
   ssr: false
 });
 
-GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 const tools: EditorTool[] = [
   "Select",
@@ -495,7 +492,7 @@ export default function PdfEditor() {
       }
 
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
       setExportSize(blob.size);
       await saveHistoryItem({
         name: `pdf-export-${new Date().toISOString().slice(0, 10)}`,

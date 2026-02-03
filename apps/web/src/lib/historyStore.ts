@@ -1,8 +1,8 @@
-type HistoryMeta = {
+export type HistoryMeta = {
   id: string;
   name: string;
   type: string;
-  kind: "pdf" | "image" | "archive" | "doc";
+  kind: "pdf" | "image" | "archive" | "doc" | "pages";
   size: number;
   createdAt: string;
 };
@@ -46,7 +46,7 @@ function openDb(): Promise<IDBDatabase> {
 export async function saveHistoryItem(options: {
   name: string;
   blob: Blob;
-  kind: "pdf" | "image" | "archive" | "doc";
+  kind: "pdf" | "image" | "archive" | "doc" | "pages";
 }): Promise<HistoryMeta> {
   if (!isBrowser) {
     throw new Error("History store is only available in the browser.");
