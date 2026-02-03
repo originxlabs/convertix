@@ -1,0 +1,22 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="card" x1="40" y1="16" x2="220" y2="244" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1C2435" />
+      <stop offset="1" stop-color="#0B0D12" />
+    </linearGradient>
+    <linearGradient id="metal" x1="60" y1="40" x2="196" y2="216" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5F7FB" />
+      <stop offset="0.5" stop-color="#D6DBE6" />
+      <stop offset="1" stop-color="#B6BDCF" />
+    </linearGradient>
+  </defs>
+  <rect x="20" y="16" width="200" height="224" rx="28" fill="url(#card)" />
+  <path d="M58 42H168C180.7 42 191 52.3 191 65V96L224 129L191 162V194C191 206.7 180.7 217 168 217H58C45.3 217 35 206.7 35 194V65C35 52.3 45.3 42 58 42Z" fill="url(#metal)" stroke="#EEF1F7" stroke-width="6" />
+  <path d="M72 148C102 168 126 170 156 148" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" />
+  <path d="M86 112H140" stroke="#0B0D12" stroke-width="14" stroke-linecap="round" />
+  <path d="M140 112L120 94" stroke="#0B0D12" stroke-width="14" stroke-linecap="round" />
+  <path d="M140 112L120 130" stroke="#0B0D12" stroke-width="14" stroke-linecap="round" />
+  <path d="M170 112H224" stroke="#0B0D12" stroke-width="14" stroke-linecap="round" />
+  <path d="M170 112L190 94" stroke="#0B0D12" stroke-width="14" stroke-linecap="round" />
+  <path d="M170 112L190 130" stroke="#0B0D12" stroke-width="14" stroke-linecap="round" />
+</svg>

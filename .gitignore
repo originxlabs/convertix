@@ -1,0 +1,24 @@
+# Node
+node_modules/
+.next/
+
+# .NET
+bin/
+obj/
+
+# OS
+.DS_Store
+
+# PDF temp
+*.pdf
+
+
+.env
+.env.*
+!.env.example
+
+.vscode/*
+
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
