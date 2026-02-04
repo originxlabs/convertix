@@ -84,6 +84,16 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+var pdfcpuEnv = Environment.GetEnvironmentVariable("PDFCPU_PATH");
+if (string.IsNullOrWhiteSpace(pdfcpuEnv))
+{
+    var bundledPdfCpu = Path.Combine(AppContext.BaseDirectory, "tools", "pdfcpu");
+    if (File.Exists(bundledPdfCpu))
+    {
+        Environment.SetEnvironmentVariable("PDFCPU_PATH", bundledPdfCpu);
+    }
+}
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

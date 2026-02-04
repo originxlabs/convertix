@@ -52,20 +52,21 @@ jobs:
             -o ${{ env.PUBLISH_DIR }}
 
       # -----------------------------
-      # 3b. Add pdfcpu binary
+      # 3b. Bundle pdfcpu binary
       # -----------------------------
-      - name: Download pdfcpu
+      - name: Add bundled pdfcpu
         run: |
-          PDFCPU_VERSION="0.8.2" \
-          PDFCPU_PINNED_URL="${{ secrets.PDFCPU_PINNED_URL }}" \
-          PUBLISH_DIR="${{ env.PUBLISH_DIR }}" \
-          ./scripts/install-pdfcpu.sh
+          mkdir -p "${{ env.PUBLISH_DIR }}/tools"
+          cp services/api/tools/pdfcpu/linux_amd64/pdfcpu "${{ env.PUBLISH_DIR }}/tools/pdfcpu"
+          chmod +x "${{ env.PUBLISH_DIR }}/tools/pdfcpu"
       - name: Verify pdfcpu binary
         run: |
           test -x "${{ env.PUBLISH_DIR }}/tools/pdfcpu"
           "${{ env.PUBLISH_DIR }}/tools/pdfcpu" version
 
 
+      # -----------------------------
+      # 4. Validate Build Output
       # -----------------------------
       # 4. Validate Build Output
       # -----------------------------
