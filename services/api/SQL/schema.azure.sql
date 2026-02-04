@@ -20,7 +20,9 @@ BEGIN
     CREATE TABLE users (
         user_id NVARCHAR(100) PRIMARY KEY,
         org_id NVARCHAR(100) NULL,
-        email NVARCHAR(255) NULL,
+        email NVARCHAR(255) NOT NULL,
+        password_hash VARBINARY(256) NOT NULL,
+        password_salt VARBINARY(64) NOT NULL,
         created_at DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
     );
 END;
@@ -219,6 +221,19 @@ END;
 GO
 
 /* =========================
+   TOKEN REVOCATIONS
+   ========================= */
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'token_revocations')
+BEGIN
+    CREATE TABLE token_revocations (
+        jti NVARCHAR(100) NOT NULL PRIMARY KEY,
+        expires_at DATETIMEOFFSET NOT NULL,
+        created_at DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
+    );
+END;
+GO
+
+/* =========================
    ORG INVOICES
    ========================= */
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'org_invoices')
@@ -280,6 +295,64 @@ BEGIN
 END;
 GO
 
+/* =========================
+   ORG SUBSCRIPTIONS
+   ========================= */
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'org_subscriptions')
+BEGIN
+    CREATE TABLE org_subscriptions (
+        subscription_id NVARCHAR(100) PRIMARY KEY,
+        org_id NVARCHAR(100) NOT NULL,
+        tier NVARCHAR(50) NOT NULL,
+        status NVARCHAR(50) NOT NULL,
+        billing_cycle NVARCHAR(20) NOT NULL DEFAULT 'monthly',
+        currency NVARCHAR(10) NOT NULL DEFAULT 'INR',
+        provider NVARCHAR(50) NOT NULL DEFAULT 'razorpay',
+        provider_subscription_id NVARCHAR(255),
+        provider_customer_id NVARCHAR(255),
+        started_at DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+        current_period_start DATETIMEOFFSET,
+        current_period_end DATETIMEOFFSET,
+        canceled_at DATETIMEOFFSET,
+        created_at DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+        updated_at DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
+    );
+END;
+GO
+
+/* =========================
+   USAGE AGGREGATES DAILY
+   ========================= */
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'usage_aggregates_daily')
+BEGIN
+    CREATE TABLE usage_aggregates_daily (
+        aggregate_id NVARCHAR(100) PRIMARY KEY,
+        org_id NVARCHAR(100) NOT NULL,
+        user_id NVARCHAR(100),
+        usage_date DATE NOT NULL,
+        feature NVARCHAR(100) NOT NULL,
+        requests INT NOT NULL DEFAULT 0,
+        tokens BIGINT NOT NULL DEFAULT 0,
+        amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+        currency NVARCHAR(10) NOT NULL DEFAULT 'INR',
+        created_at DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
+    );
+END;
+GO
+
+/* =========================
+   TOKEN REVOCATIONS
+   ========================= */
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'token_revocations')
+BEGIN
+    CREATE TABLE token_revocations (
+        jti NVARCHAR(100) PRIMARY KEY,
+        expires_at DATETIMEOFFSET NOT NULL,
+        created_at DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
+    );
+END;
+GO
+
 ALTER TABLE users ADD CONSTRAINT fk_users_orgs FOREIGN KEY (org_id) REFERENCES orgs(org_id);
 ALTER TABLE teams ADD CONSTRAINT fk_teams_orgs FOREIGN KEY (org_id) REFERENCES orgs(org_id);
 ALTER TABLE org_members ADD CONSTRAINT fk_org_members_users FOREIGN KEY (user_id) REFERENCES users(user_id);
@@ -302,7 +375,20 @@ ALTER TABLE credit_events ADD CONSTRAINT fk_credit_events_users FOREIGN KEY (use
 ALTER TABLE org_invoices ADD CONSTRAINT fk_org_invoices_orgs FOREIGN KEY (org_id) REFERENCES orgs(org_id);
 ALTER TABLE org_invoices ADD CONSTRAINT fk_org_invoices_users FOREIGN KEY (user_id) REFERENCES users(user_id);
 ALTER TABLE invoice_line_items ADD CONSTRAINT fk_invoice_items_invoice FOREIGN KEY (invoice_id) REFERENCES org_invoices(invoice_id);
+ALTER TABLE usage_aggregates_daily ADD CONSTRAINT fk_usage_aggregates_daily_orgs FOREIGN KEY (org_id) REFERENCES orgs(org_id);
+ALTER TABLE usage_aggregates_daily ADD CONSTRAINT fk_usage_aggregates_daily_users FOREIGN KEY (user_id) REFERENCES users(user_id);
+ALTER TABLE billing_snapshots ADD CONSTRAINT fk_billing_snapshots_tiers FOREIGN KEY (tier) REFERENCES tiers(tier);
+ALTER TABLE billing_snapshots ADD CONSTRAINT fk_billing_snapshots_orgs FOREIGN KEY (org_id) REFERENCES orgs(org_id);
+ALTER TABLE billing_snapshots ADD CONSTRAINT fk_billing_snapshots_users FOREIGN KEY (user_id) REFERENCES users(user_id);
+ALTER TABLE org_subscriptions ADD CONSTRAINT fk_org_subscriptions_orgs FOREIGN KEY (org_id) REFERENCES orgs(org_id);
+ALTER TABLE org_subscriptions ADD CONSTRAINT fk_org_subscriptions_tiers FOREIGN KEY (tier) REFERENCES tiers(tier);
 GO
+
+-- Indexes
+CREATE INDEX ix_usage_aggregates_daily_org_date ON usage_aggregates_daily (org_id, usage_date);
+CREATE INDEX ix_usage_aggregates_daily_user_date ON usage_aggregates_daily (user_id, usage_date);
+CREATE INDEX ix_org_subscriptions_org_status ON org_subscriptions (org_id, status, current_period_end);
+CREATE INDEX ix_token_revocations_expires ON token_revocations (expires_at);
 
 
 -- 🏢 Core

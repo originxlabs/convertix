@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { getAuthToken } from "@/lib/auth";
 import { saveHistoryItem } from "@/lib/historyStore";
 
 export default function HtmlToImageTool() {
@@ -19,9 +20,13 @@ export default function HtmlToImageTool() {
     if (!url.trim()) return;
     setStatus("Rendering...");
     try {
+      const token = getAuthToken();
       const response = await fetch(`${apiBase}/api/image/html-to-image`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ url, format })
       });
       if (!response.ok) {

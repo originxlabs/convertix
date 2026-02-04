@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 import { Button } from "@/components/ui/button";
+import { applyAuthHeader } from "@/lib/auth";
 import { saveHistoryItem } from "@/lib/historyStore";
 
 GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -98,6 +99,7 @@ export default function MergePdfTool() {
     const blob = await new Promise<Blob | null>((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${apiBase}/api/pdf/merge`);
+      applyAuthHeader(xhr);
       xhr.responseType = "blob";
       xhr.upload.onprogress = (event) => {
         if (!event.lengthComputable) return;

@@ -1,0 +1,94 @@
+name: Deploy Convertix API (Production)
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  API_PROJECT: services/api/PdfEditor.Api.csproj
+  PUBLISH_DIR: services/api/out
+  ZIP_PATH: api.zip
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # -----------------------------
+      # 1. Checkout
+      # -----------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # 2. Setup .NET
+      # -----------------------------
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # -----------------------------
+      # 3. Restore + Build + Publish
+      # -----------------------------
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.API_PROJECT }}
+
+      - name: Publish API
+        run: |
+          dotnet clean ${{ env.API_PROJECT }}
+          dotnet publish ${{ env.API_PROJECT }} \
+            -c Release \
+            -o ${{ env.PUBLISH_DIR }}
+
+      # -----------------------------
+      # 4. Validate Build Output
+      # -----------------------------
+      - name: Validate publish output
+        run: |
+          test -f ${{ env.PUBLISH_DIR }}/PdfEditor.Api.dll
+          test -f ${{ env.PUBLISH_DIR }}/PdfEditor.Api.runtimeconfig.json
+          echo "✅ Build output validated"
+
+      # -----------------------------
+      # 5. Zip (Run-From-Package format)
+      # -----------------------------
+      - name: Create deployment zip
+        run: |
+          cd ${{ env.PUBLISH_DIR }}
+          zip -r ../../../${{ env.ZIP_PATH }} .
+          cd ../../../
+          unzip -l ${{ env.ZIP_PATH }} | head -20
+
+      # -----------------------------
+      # 6. Azure Login
+      # -----------------------------
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # -----------------------------
+      # 7. Deploy to App Service
+      # -----------------------------
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_APP_NAME }}
+          package: ${{ env.ZIP_PATH }}
+
+      # -----------------------------
+      # 8. Wait for Startup
+      # -----------------------------
+      - name: Wait for app startup
+        run: sleep 25
+
+      # -----------------------------
+      # 9. Smoke Test (PROD)
+      # -----------------------------
+      - name: Run smoke tests
+        run: |
+          chmod +x scripts/smoke.sh
+          API_BASE=${{ secrets.API_BASE_URL }} ./scripts/smoke.sh

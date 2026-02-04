@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { applyAuthHeader } from "@/lib/auth";
 import { saveHistoryItem } from "@/lib/historyStore";
 
 export default function PdfToWordTool() {
@@ -38,6 +39,7 @@ export default function PdfToWordTool() {
     const blob = await new Promise<Blob | null>((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${apiBase}/api/pdf/pdf-to-word`);
+      applyAuthHeader(xhr);
       xhr.responseType = "blob";
       xhr.upload.onprogress = (event) => {
         if (!event.lengthComputable) return;

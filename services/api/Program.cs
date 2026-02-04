@@ -1,4 +1,7 @@
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,15 +23,64 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<PdfEditor.Api.Services.BillingStore>();
 builder.Services.AddSingleton<PdfEditor.Api.Services.EmailService>();
+builder.Services.AddSingleton<PdfEditor.Api.Services.UserStore>();
+builder.Services.AddSingleton<PdfEditor.Api.Services.JwtTokenService>();
+builder.Services.AddSingleton<PdfEditor.Api.Services.TokenRevocationStore>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.OperationFilter<PdfEditor.Api.Services.SwaggerFileUploadOperationFilter>();
 });
 
+var jwtKey = builder.Configuration["JWT_KEY"];
+
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    Console.WriteLine("WARNING: JWT_KEY is missing. Auth will not work.");
+    jwtKey = "TEMP_DEV_KEY_CHANGE_ME";
+}
+
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "convertix",
+            ValidAudience = "convertix",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var jti = context.Principal?.FindFirst("jti")?.Value;
+                if (string.IsNullOrWhiteSpace(jti))
+                {
+                    return;
+                }
+                var store = context.HttpContext.RequestServices
+                    .GetRequiredService<PdfEditor.Api.Services.TokenRevocationStore>();
+                if (await store.IsRevokedAsync(jti))
+                {
+                    context.Fail("Token revoked.");
+                }
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
@@ -39,5 +91,11 @@ app.UseSwaggerUI(options =>
 });
 
 app.MapControllers();
+
+app.MapGet("/health", () => Results.Ok(new {
+    status = "ok",
+    jwt = !string.IsNullOrWhiteSpace(builder.Configuration["JWT_KEY"])
+}));
+
 
 app.Run();

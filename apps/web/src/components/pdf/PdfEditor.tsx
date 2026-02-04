@@ -14,6 +14,7 @@ import PdfThumbnail from "@/components/pdf/PdfThumbnail";
 import { useEditorStore } from "@/lib/editorStore";
 import type { EditorTool, TextOverlay, ImageOverlay, ShapeOverlay, SignatureOverlay } from "@/lib/editorTypes";
 import { saveHistoryItem } from "@/lib/historyStore";
+import { applyAuthHeader } from "@/lib/auth";
 
 const PdfFabricStage = dynamic(() => import("@/components/pdf/PdfFabricStage"), {
   ssr: false
@@ -111,6 +112,7 @@ export default function PdfEditor() {
       const fileId = await new Promise<string>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `${apiBase}/api/upload`);
+        applyAuthHeader(xhr);
         xhr.responseType = "json";
         xhr.upload.onprogress = (event) => {
           if (!event.lengthComputable) return;

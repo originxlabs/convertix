@@ -9,6 +9,14 @@ IMAGE_ENGINE_DIR="$ROOT_DIR/services/image-engine"
 
 mkdir -p /tmp/convertix
 
+# Load local environment variables if available.
+if [ -f "$ROOT_DIR/.env.local" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ROOT_DIR/.env.local"
+  set +a
+fi
+
 # Stop any previous Convertix processes tracked by our PID/port files.
 if [ -x "$ROOT_DIR/scripts/stop.sh" ]; then
   "$ROOT_DIR/scripts/stop.sh" >/dev/null 2>&1 || true
@@ -63,7 +71,7 @@ IMAGE_ENGINE_BASE="http://localhost:$IMAGE_ENGINE_PORT"
 ( 
   cd "$API_DIR"
   dotnet restore >/tmp/convertix/api.restore.log 2>&1
-  IMAGE_ENGINE_URL="$API_BASE/image-engine" dotnet run --urls "$API_BASE" > /tmp/convertix/api.log 2>&1 &
+  IMAGE_ENGINE_URL="$IMAGE_ENGINE_BASE" dotnet run --urls "$API_BASE" > /tmp/convertix/api.log 2>&1 &
   echo $! > /tmp/convertix/api.pid
   echo "$API_PORT" > /tmp/convertix/api.port
 )

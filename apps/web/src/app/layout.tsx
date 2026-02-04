@@ -1,5 +1,6 @@
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 
+import ApiAuthBridge from "@/components/ApiAuthBridge";
 import "./globals.css";
 
 const display = Cormorant_Garamond({
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body
         className={`min-h-screen bg-obsidian-50 font-body text-ink-950 ${display.variable} ${body.variable}`}
       >
+        <ApiAuthBridge />
         {children}
       </body>
     </html>

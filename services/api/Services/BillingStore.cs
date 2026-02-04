@@ -1,8 +1,8 @@
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using Npgsql;
 
 namespace PdfEditor.Api.Services;
 
@@ -16,9 +16,9 @@ public sealed class BillingStore
             ?? throw new InvalidOperationException("AZURE_SQL_CONNECTION missing");
     }
 
-    private NpgsqlConnection OpenConnection()
+    private SqlConnection OpenConnection()
     {
-        var conn = new NpgsqlConnection(_connectionString);
+        var conn = new SqlConnection(_connectionString);
         conn.Open();
         return conn;
     }
@@ -27,7 +27,7 @@ public sealed class BillingStore
     {
         const string sql = "SELECT tier, name, description FROM tiers ORDER BY sort_order;";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         var tiers = new List<TierInfo>();
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
@@ -45,7 +45,7 @@ public sealed class BillingStore
     {
         const string sql = "SELECT tier, price_monthly, price_yearly, currency FROM pricing ORDER BY sort_order;";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         var pricing = new List<PricingInfo>();
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
@@ -64,7 +64,7 @@ public sealed class BillingStore
     {
         const string sql = "SELECT tier, expires_at, org_id FROM user_entitlements WHERE user_id = @user_id;";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("user_id", userId);
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync())
@@ -83,7 +83,7 @@ public sealed class BillingStore
         const string sql = "SELECT activation_key_hash, tier, expires_at, org_id, grace_period_days FROM license_keys WHERE activation_key_hash = @hash AND is_active = true;";
         var hash = HashActivationKey(activationKey);
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("hash", hash);
         await using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync())
@@ -107,7 +107,7 @@ public sealed class BillingStore
 INSERT INTO license_keys (activation_key_hash, tier, expires_at, org_id, grace_period_days, is_active)
 VALUES (@hash, @tier, @expires_at, @org_id, @grace_days, true);";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("hash", hash);
         cmd.Parameters.AddWithValue("tier", tier);
         cmd.Parameters.AddWithValue("expires_at", (object?)expiresAt ?? DBNull.Value);
@@ -121,7 +121,7 @@ VALUES (@hash, @tier, @expires_at, @org_id, @grace_days, true);";
     {
         const string sql = "UPDATE license_keys SET last_used_at = now(), last_user_id = @user_id, last_device_id = @device_id WHERE activation_key_hash = @hash;";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("hash", activationHash);
         cmd.Parameters.AddWithValue("user_id", userId);
         cmd.Parameters.AddWithValue("device_id", deviceId);
@@ -132,7 +132,7 @@ VALUES (@hash, @tier, @expires_at, @org_id, @grace_days, true);";
     {
         const string sql = "INSERT INTO usage_events (user_id, feature, amount, month_key) VALUES (@user_id, @feature, @amount, @month_key);";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("user_id", userId);
         cmd.Parameters.AddWithValue("feature", feature);
         cmd.Parameters.AddWithValue("amount", amount);
@@ -144,7 +144,7 @@ VALUES (@hash, @tier, @expires_at, @org_id, @grace_days, true);";
     {
         const string sql = "SELECT balance FROM credits_wallet WHERE user_id = @user_id;";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("user_id", userId);
         var result = await cmd.ExecuteScalarAsync();
         return result is null ? 0 : Convert.ToDecimal(result);
@@ -153,18 +153,22 @@ VALUES (@hash, @tier, @expires_at, @org_id, @grace_days, true);";
     public async Task<decimal> AddCreditsAsync(string userId, decimal amount, string reason)
     {
         const string upsert = @"
-INSERT INTO credits_wallet (user_id, balance)
-VALUES (@user_id, @amount)
-ON CONFLICT (user_id)
-DO UPDATE SET balance = credits_wallet.balance + @amount;";
+IF EXISTS (SELECT 1 FROM credits_wallet WHERE user_id = @user_id)
+BEGIN
+  UPDATE credits_wallet SET balance = balance + @amount WHERE user_id = @user_id;
+END
+ELSE
+BEGIN
+  INSERT INTO credits_wallet (user_id, balance) VALUES (@user_id, @amount);
+END";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(upsert, conn);
+        await using var cmd = new SqlCommand(upsert, conn);
         cmd.Parameters.AddWithValue("user_id", userId);
         cmd.Parameters.AddWithValue("amount", amount);
         await cmd.ExecuteNonQueryAsync();
 
         const string log = "INSERT INTO credit_events (user_id, amount, reason) VALUES (@user_id, @amount, @reason);";
-        await using var logCmd = new NpgsqlCommand(log, conn);
+        await using var logCmd = new SqlCommand(log, conn);
         logCmd.Parameters.AddWithValue("user_id", userId);
         logCmd.Parameters.AddWithValue("amount", amount);
         logCmd.Parameters.AddWithValue("reason", reason);
@@ -177,7 +181,7 @@ DO UPDATE SET balance = credits_wallet.balance + @amount;";
     {
         const string sql = "UPDATE credits_wallet SET balance = balance - @amount WHERE user_id = @user_id AND balance >= @amount;";
         await using var conn = OpenConnection();
-        await using var cmd = new NpgsqlCommand(sql, conn);
+        await using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("user_id", userId);
         cmd.Parameters.AddWithValue("amount", amount);
         var rows = await cmd.ExecuteNonQueryAsync();
@@ -187,7 +191,7 @@ DO UPDATE SET balance = credits_wallet.balance + @amount;";
         }
 
         const string log = "INSERT INTO credit_events (user_id, amount, reason) VALUES (@user_id, @amount, @reason);";
-        await using var logCmd = new NpgsqlCommand(log, conn);
+        await using var logCmd = new SqlCommand(log, conn);
         logCmd.Parameters.AddWithValue("user_id", userId);
         logCmd.Parameters.AddWithValue("amount", -amount);
         logCmd.Parameters.AddWithValue("reason", reason);

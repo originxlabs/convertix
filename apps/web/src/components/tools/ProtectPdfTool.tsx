@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { applyAuthHeader } from "@/lib/auth";
 import { saveHistoryItem } from "@/lib/historyStore";
 
 export default function ProtectPdfTool() {
@@ -46,6 +47,7 @@ export default function ProtectPdfTool() {
     const blob = await new Promise<Blob | null>((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${apiBase}/api/pdf/protect`);
+      applyAuthHeader(xhr);
       xhr.responseType = "blob";
       xhr.upload.onprogress = (event) => {
         if (!event.lengthComputable) return;

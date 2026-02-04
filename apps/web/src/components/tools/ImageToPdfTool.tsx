@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { getAuthToken } from "@/lib/auth";
 import { saveHistoryItem } from "@/lib/historyStore";
 
 export default function ImageToPdfTool() {
@@ -27,8 +28,10 @@ export default function ImageToPdfTool() {
     setStatus("Uploading images...");
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
+    const token = getAuthToken();
     const response = await fetch(`${apiBase}/api/convert/image-to-pdf`, {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: formData
     });
     if (!response.ok) {

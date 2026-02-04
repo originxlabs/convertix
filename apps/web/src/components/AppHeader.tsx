@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import ToolIcon, { type ToolIconName } from "@/components/ToolIcon";
 
 export default function AppHeader() {
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">(
@@ -15,6 +16,105 @@ export default function AppHeader() {
   const [imageCheckedAt, setImageCheckedAt] = useState<string>("");
   const [cacheCleared, setCacheCleared] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [showPdfDrawer, setShowPdfDrawer] = useState(false);
+  const [showPdfMenu, setShowPdfMenu] = useState(false);
+  const [showImageMenu, setShowImageMenu] = useState(false);
+
+  const pdfMenu: Array<{ title: string; items: Array<{ label: string; href: string; icon: ToolIconName }> }> = [
+    {
+      title: "Organize PDF",
+      items: [
+        { label: "Merge PDF", href: "/tools/merge-pdf", icon: "merge" },
+        { label: "Split PDF", href: "/tools/split-pdf", icon: "split" },
+        { label: "Organize PDF", href: "/tools/organize-pdf", icon: "organize" },
+        { label: "Remove Pages", href: "/tools/remove-pages", icon: "organize" },
+        { label: "Extract Pages", href: "/tools/extract-pages", icon: "organize" },
+        { label: "Rotate PDF", href: "/tools/rotate-pdf", icon: "organize" }
+      ]
+    },
+    {
+      title: "Convert to PDF",
+      items: [
+        { label: "Word to PDF", href: "/tools/word-to-pdf", icon: "word-to-pdf" },
+        { label: "PowerPoint to PDF", href: "/tools/ppt-to-pdf", icon: "ppt-to-pdf" },
+        { label: "Excel to PDF", href: "/tools/excel-to-pdf", icon: "excel-to-pdf" },
+        { label: "HTML to PDF", href: "/tools/html-to-pdf", icon: "word-to-pdf" },
+        { label: "JPG to PDF", href: "/tools/image-to-pdf", icon: "jpg-to-pdf" },
+        { label: "Scan to PDF", href: "/tools/scan-to-pdf", icon: "scan" }
+      ]
+    },
+    {
+      title: "Convert from PDF",
+      items: [
+        { label: "PDF to Word", href: "/tools/pdf-to-word", icon: "pdf-to-word" },
+        { label: "PDF to Pages", href: "/tools/pdf-to-pages", icon: "pdf-to-word" },
+        { label: "PDF to JPG", href: "/tools/pdf-to-image", icon: "pdf-to-jpg" },
+        { label: "PDF to PPT", href: "/tools/pdf-to-ppt", icon: "pdf-to-ppt" },
+        { label: "PDF to Excel", href: "/tools/pdf-to-excel", icon: "pdf-to-excel" },
+        { label: "OCR PDF", href: "/tools/ocr-pdf", icon: "ocr" }
+      ]
+    },
+    {
+      title: "Edit PDF",
+      items: [
+        { label: "Edit PDF", href: "/tools/edit-pdf", icon: "edit" },
+        { label: "Add Page Numbers", href: "/tools/add-page-numbers", icon: "edit" },
+        { label: "Add Watermark", href: "/tools/add-watermark", icon: "edit" },
+        { label: "Crop PDF", href: "/tools/crop-pdf", icon: "crop" },
+        { label: "Sign PDF", href: "/tools/sign-pdf", icon: "sign" }
+      ]
+    },
+    {
+      title: "Optimize & Security",
+      items: [
+        { label: "Compress PDF", href: "/tools/compress-pdf", icon: "compress" },
+        { label: "Repair PDF", href: "/tools/repair-pdf", icon: "compress" },
+        { label: "PDF to PDF/A", href: "/tools/pdf-to-pdfa", icon: "pdf-to-pdfa" },
+        { label: "Protect PDF", href: "/tools/protect-pdf", icon: "protect" },
+        { label: "Unlock PDF", href: "/tools/unlock-pdf", icon: "unlock" },
+        { label: "Redact PDF", href: "/tools/redact-pdf", icon: "protect" },
+        { label: "Compare PDF", href: "/tools/compare-pdf", icon: "protect" },
+        { label: "Flatten PDF", href: "/tools/flatten-pdf", icon: "protect" }
+      ]
+    }
+  ];
+
+  const imageMenu: Array<{ title: string; items: Array<{ label: string; href: string; icon: ToolIconName }> }> = [
+    {
+      title: "Optimize",
+      items: [
+        { label: "Compress Image", href: "/tools/image-compress", icon: "compress" },
+        { label: "Upscale Image", href: "/tools/image-upscale", icon: "img-edit" }
+      ]
+    },
+    {
+      title: "Edit",
+      items: [
+        { label: "Resize Image", href: "/tools/image-resize", icon: "img-resize" },
+        { label: "Photo Editor", href: "/tools/image-edit", icon: "img-edit" },
+        { label: "Crop Image", href: "/tools/image-crop", icon: "crop" },
+        { label: "Rotate Image", href: "/tools/image-rotate", icon: "crop" },
+        { label: "Remove Background", href: "/tools/image-remove-bg", icon: "img-edit" }
+      ]
+    },
+    {
+      title: "Convert",
+      items: [
+        { label: "Convert to JPG", href: "/tools/image-convert-to-jpg", icon: "img-convert-jpg" },
+        { label: "Convert from JPG", href: "/tools/image-convert-from-jpg", icon: "img-convert-from-jpg" },
+        { label: "HTML to Image", href: "/tools/html-to-image", icon: "img-convert-jpg" }
+      ]
+    },
+    {
+      title: "Create & Security",
+      items: [
+        { label: "Meme Generator", href: "/tools/image-meme", icon: "img-edit" },
+        { label: "Watermark Image", href: "/tools/image-watermark", icon: "protect" },
+        { label: "Blur Face", href: "/tools/image-blur-face", icon: "protect" }
+      ]
+    }
+  ];
 
   const apiBase = useMemo(
     () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5055",
@@ -59,6 +159,37 @@ export default function AppHeader() {
     };
   }, [apiBase]);
 
+  useEffect(() => {
+    const syncAuth = () => {
+      const token = window.localStorage.getItem("convertix-auth-token");
+      setIsSignedIn(Boolean(token));
+    };
+    syncAuth();
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("convertix-auth-expired", syncAuth);
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("convertix-auth-expired", syncAuth);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const token = window.localStorage.getItem("convertix-auth-token");
+    if (token) {
+      try {
+        await fetch(`${apiBase}/api/session/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch {
+        // ignore logout errors
+      }
+    }
+    window.localStorage.removeItem("convertix-auth-token");
+    window.localStorage.removeItem("convertix-user-id");
+    setIsSignedIn(false);
+  };
+
   const handleClearCache = () => {
     try {
       const keysToRemove: string[] = [];
@@ -94,56 +225,114 @@ export default function AppHeader() {
         </Link>
 
         <nav className="landing-nav__center">
-          <Link href="/x-pdf" className="landing-link">
+          <div
+            className="nav-group"
+            onMouseEnter={() => setShowPdfMenu(true)}
+            onMouseLeave={() => setShowPdfMenu(false)}
+          >
+            <Link
+              href="/x-pdf"
+              className="landing-link landing-link--dropdown"
+              onClick={() => setShowPdfMenu((prev) => !prev)}
+            >
+              <span className="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M6 3h8l4 4v14H6V3z M14 3v5h5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              PDF Studio
+            </Link>
+            <div
+              className={`nav-menu nav-menu--pdf ${showPdfMenu ? "nav-menu--open" : ""}`}
+              onMouseEnter={() => setShowPdfMenu(true)}
+              onMouseLeave={() => setShowPdfMenu(false)}
+            >
+              {pdfMenu.map((section) => (
+                <div key={section.title} className="nav-menu__column">
+                  <div className="nav-menu__title">{section.title}</div>
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="nav-menu__item"
+                      onClick={() => setShowPdfMenu(false)}
+                    >
+                      <ToolIcon name={item.icon} className="nav-menu__icon" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div
+            className="nav-group"
+            onMouseEnter={() => setShowImageMenu(true)}
+            onMouseLeave={() => setShowImageMenu(false)}
+          >
+            <Link
+              href="/x-image"
+              className="landing-link landing-link--dropdown"
+              onClick={() => setShowImageMenu((prev) => !prev)}
+            >
+              <span className="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M8 13l3-3 5 6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              </span>
+              Image Labs
+            </Link>
+            <div
+              className={`nav-menu nav-menu--image ${showImageMenu ? "nav-menu--open" : ""}`}
+              onMouseEnter={() => setShowImageMenu(true)}
+              onMouseLeave={() => setShowImageMenu(false)}
+            >
+              {imageMenu.map((section) => (
+                <div key={section.title} className="nav-menu__column">
+                  <div className="nav-menu__title">{section.title}</div>
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="nav-menu__item"
+                      onClick={() => setShowImageMenu(false)}
+                    >
+                      <ToolIcon name={item.icon} className="nav-menu__icon" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+          <Link href="/noteflowlm" className="landing-link landing-link--ai">
             <span className="nav-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
-                  d="M6 3h8l4 4v14H6V3z M14 3v5h5"
+                  d="M6 5h7a4 4 0 0 1 4 4v9H9a3 3 0 0 0-3 3V5z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 9h5M9 13h5M14.5 6.5l1-2m1 2l2-1m-1 3l2 1"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.4"
                   strokeLinecap="round"
-                  strokeLinejoin="round"
                 />
               </svg>
             </span>
-            PDF Studio
-          </Link>
-          <Link href="/x-image" className="landing-link">
-            <span className="nav-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M8 13l3-3 5 6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </span>
-            Image Labs
-          </Link>
-          <Link href="/noteflowlm" className="landing-link">
-            <span className="nav-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 6h9a4 4 0 0 1 4 4v8H9a4 4 0 0 0-4 4V6z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                <path d="M9 10h6M9 14h6" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </span>
             NoteFlowLM
-          </Link>
-          <Link href="/pricing" className="landing-link">
-            <span className="nav-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 7h10v10H7z" fill="none" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M12 9v6M9.5 12h5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </span>
-            Pricing
-          </Link>
-          <Link href="/docs" className="landing-link">
-            <span className="nav-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 4h10a2 2 0 0 1 2 2v14H8a2 2 0 0 0-2 2V4z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                <path d="M9 8h6M9 12h6M9 16h4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </span>
-            Docs
           </Link>
         </nav>
 
@@ -156,88 +345,27 @@ export default function AppHeader() {
             </span>
             Clear Cache
           </button>
-          <div className="status-hub" key={`status-${imagePulse}`}>
-            <div className="status-hub__trigger">
-              <span
-                className={`api-status__dot ${
-                  apiStatus === "online"
-                    ? "api-status__dot--online"
-                    : apiStatus === "offline"
-                      ? "api-status__dot--offline"
-                      : "api-status__dot--checking"
-                }`}
-              />
-              Status
-            </div>
-            <div className="status-hub__panel">
-              <div className="status-hub__row">
-                <span
-                  className={`api-status__dot ${
-                    apiStatus === "online"
-                      ? "api-status__dot--online"
-                      : apiStatus === "offline"
-                        ? "api-status__dot--offline"
-                        : "api-status__dot--checking"
-                  }`}
-                />
-                <div>
-                  <div className="status-hub__label">API</div>
-                  <div className="status-hub__meta">{apiStatus}</div>
-                </div>
-              </div>
-              <div className="status-hub__row">
-                <span
-                  className={`api-status__dot ${
-                    imageStatus === "online"
-                      ? "api-status__dot--online"
-                      : imageStatus === "offline"
-                        ? "api-status__dot--offline"
-                        : "api-status__dot--checking"
-                  }`}
-                />
-                <div>
-                  <div className="status-hub__label">Image Engine</div>
-                  <div className="status-hub__meta">{imageStatus}</div>
-                </div>
-              </div>
-              <div className="status-hub__row">
-                <span className="api-status__dot api-status__dot--online" />
-                <div>
-                  <div className="status-hub__label">PDF Engine</div>
-                  <div className="status-hub__meta">local</div>
-                </div>
-              </div>
-              <div className="status-hub__row">
-                <span className="api-status__dot api-status__dot--online" />
-                <div>
-                  <div className="status-hub__label">Tier</div>
-                  <div className="status-hub__meta">Free</div>
-                </div>
-              </div>
-              <div className="status-hub__row">
-                <span className="api-status__dot api-status__dot--online" />
-                <div>
-                  <div className="status-hub__label">Usage</div>
-                  <div className="status-hub__meta">Monthly summary</div>
-                  <Link href="/pricing" className="status-hub__link">
-                    View usage
-                  </Link>
-                </div>
-              </div>
-              <div className="status-hub__footer">
-                <span>Last check: {imageCheckedAt || "checking..."}</span>
-              </div>
-            </div>
-          </div>
-          <Link href="/signin" className="landing-link">
-            <span className="nav-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" fill="none" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M4 20c1.6-3 4.4-5 8-5s6.4 2 8 5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </span>
-            Sign in
-          </Link>
+          {isSignedIn ? (
+            <button type="button" onClick={handleLogout} className="landing-link">
+              <span className="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 7v-2h10v14H10v-2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  <path d="M4 12h10M10 8l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              Sign out
+            </button>
+          ) : (
+            <Link href="/signin" className="landing-link">
+              <span className="nav-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0z" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M4 20c1.6-3 4.4-5 8-5s6.4 2 8 5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              </span>
+              Sign in
+            </Link>
+          )}
           <Link href="/get-started" className="landing-cta">
             <span className="nav-icon">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -251,6 +379,28 @@ export default function AppHeader() {
 
       {cacheCleared && (
         <div className="landing-toast">Cache cleared for this browser session.</div>
+      )}
+
+          {showPdfDrawer && (
+        <div className="nav-drawer">
+          <div className="nav-drawer__panel">
+            <div className="nav-drawer__header">
+              <span>PDF Tools</span>
+              <button type="button" onClick={() => setShowPdfDrawer(false)}>Close</button>
+            </div>
+            {pdfMenu.map((section) => (
+              <div key={section.title} className="nav-drawer__section">
+                <div className="nav-drawer__title">{section.title}</div>
+                {section.items.map((item) => (
+                  <Link key={item.href} href={item.href} className="nav-drawer__item">
+                    <ToolIcon name={item.icon} className="nav-menu__icon" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {showClearModal && (

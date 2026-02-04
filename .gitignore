@@ -47,3 +47,10 @@ docker-compose.override.yml
 # =========================
 bin/
 obj/
+
+# Deployment artifacts
+api.zip
+
+# Database temp / backups
+SQL/*.bak
+SQL/*.tmp

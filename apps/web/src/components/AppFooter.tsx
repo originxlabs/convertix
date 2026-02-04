@@ -29,8 +29,11 @@ export default function AppFooter() {
             </div>
           </div>
         </Link>
-        <div className="text-xs text-obsidian-500">
-          Studio-grade PDF &amp; image infrastructure for modern teams.
+        <div className="flex flex-wrap items-center gap-4 text-xs text-obsidian-500">
+          <span>Studio-grade PDF &amp; image infrastructure for modern teams.</span>
+          <Link href="/pricing" className="hover:text-ink-900">Pricing</Link>
+          <Link href="/docs" className="hover:text-ink-900">Docs</Link>
+          <Link href="/status" className="hover:text-ink-900">Status</Link>
         </div>
       </div>
     </footer>

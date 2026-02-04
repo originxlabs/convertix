@@ -96,14 +96,6 @@ const tools: Array<{
     icon: "pdf-to-word"
   },
   {
-    title: "PDF to Pages",
-    description: "Convert PDFs into Apple Pages files (macOS only).",
-    href: "/tools/pdf-to-pages",
-    category: ["convert"],
-    badge: "Mac",
-    icon: "pdf-to-word"
-  },
-  {
     title: "PDF to PowerPoint",
     description: "Convert slides into PPTX.",
     href: "/tools/pdf-to-ppt",
@@ -238,6 +230,14 @@ const tools: Array<{
     title: "Compare PDF",
     description: "Diff two PDFs for changes.",
     href: "/tools/compare-pdf",
+    category: ["security"],
+    badge: "Coming",
+    icon: "protect"
+  },
+  {
+    title: "Flatten PDF",
+    description: "Lock annotations into the document.",
+    href: "/tools/flatten-pdf",
     category: ["security"],
     badge: "Coming",
     icon: "protect"
