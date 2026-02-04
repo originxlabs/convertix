@@ -52,6 +52,17 @@ jobs:
             -o ${{ env.PUBLISH_DIR }}
 
       # -----------------------------
+      # 3b. Add pdfcpu binary
+      # -----------------------------
+      - name: Download pdfcpu
+        run: |
+          mkdir -p ${{ env.PUBLISH_DIR }}/tools
+          curl -L https://github.com/pdfcpu/pdfcpu/releases/download/v0.8.2/pdfcpu_0.8.2_Linux_x86_64.tar.gz -o /tmp/pdfcpu.tar.gz
+          tar -xzf /tmp/pdfcpu.tar.gz -C /tmp
+          cp /tmp/pdfcpu/pdfcpu ${{ env.PUBLISH_DIR }}/tools/pdfcpu
+          chmod +x ${{ env.PUBLISH_DIR }}/tools/pdfcpu
+
+      # -----------------------------
       # 4. Validate Build Output
       # -----------------------------
       - name: Validate publish output

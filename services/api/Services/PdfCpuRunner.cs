@@ -9,9 +9,17 @@ public static class PdfCpuRunner
     {
         try
         {
+            var configuredPath = Environment.GetEnvironmentVariable("PDFCPU_PATH");
+            var binaryPath = string.IsNullOrWhiteSpace(configuredPath) ? "pdfcpu" : configuredPath;
+            if (!string.IsNullOrWhiteSpace(configuredPath) && !File.Exists(configuredPath))
+            {
+                error = $"PDFCPU binary not found at '{configuredPath}'.";
+                return false;
+            }
+
             var startInfo = new ProcessStartInfo
             {
-                FileName = "pdfcpu",
+                FileName = binaryPath,
                 WorkingDirectory = workDir,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
@@ -32,7 +40,9 @@ public static class PdfCpuRunner
             process.WaitForExit();
             if (process.ExitCode != 0)
             {
-                error = stderr;
+                error = string.IsNullOrWhiteSpace(stderr)
+                    ? $"pdfcpu failed with exit code {process.ExitCode}."
+                    : stderr;
                 return false;
             }
 
