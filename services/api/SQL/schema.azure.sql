@@ -341,6 +341,31 @@ END;
 GO
 
 /* =========================
+   SCHEMA PATCHES
+   ========================= */
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE Name = N'cancel_at_period_end'
+      AND Object_ID = Object_ID(N'dbo.org_subscriptions')
+)
+BEGIN
+    ALTER TABLE dbo.org_subscriptions
+        ADD cancel_at_period_end BIT NOT NULL CONSTRAINT df_org_subscriptions_cancel_at_period_end DEFAULT 0;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE Name = N'usage_data'
+      AND Object_ID = Object_ID(N'dbo.billing_snapshots')
+)
+BEGIN
+    ALTER TABLE dbo.billing_snapshots
+        ADD usage_data NVARCHAR(MAX);
+END;
+GO
+
+/* =========================
    TOKEN REVOCATIONS
    ========================= */
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'token_revocations')
