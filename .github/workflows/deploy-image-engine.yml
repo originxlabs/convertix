@@ -39,30 +39,15 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # -----------------------------
-      # 3. Docker Login to ACR
+      # 3. Build + Push Image (ACR build)
       # -----------------------------
-      - name: Docker login to ACR
+      - name: Build and push image in ACR
         run: |
-          docker login $ACR_LOGIN_SERVER \
-            -u ${{ secrets.ACR_USERNAME }} \
-            -p ${{ secrets.ACR_PASSWORD }}
-
-      # -----------------------------
-      # 4. Build Image
-      # -----------------------------
-      - name: Build image
-        run: |
-          docker build \
+          az acr build \
+            -r "${{ secrets.ACR_NAME }}" \
+            -t "${{ env.IMAGE_NAME }}:latest" \
             -f services/image-engine/Dockerfile \
-            -t $ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest \
             .
-
-      # -----------------------------
-      # 5. Push Image
-      # -----------------------------
-      - name: Push image
-        run: |
-          docker push $ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest
 
       # -----------------------------
       # 6. Deploy to App Service
@@ -91,6 +76,8 @@ jobs:
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}" \
             --settings PORT=${{ env.IMAGE_PORT }} WEBSITES_PORT=${{ env.IMAGE_PORT }}
+
+          az webapp restart --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}"
 
       # -----------------------------
       # 7. Wait for health
