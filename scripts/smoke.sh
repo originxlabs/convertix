@@ -34,13 +34,22 @@ base64_decode() {
 request() {
   local label="$1"; shift
   local code
-  code=$(curl -s -o /dev/null -w "%{http_code}" "$@")
+  local body_file
+  body_file="$(mktemp)"
+  code=$(curl -s -o "$body_file" -w "%{http_code}" "$@")
 
   if [[ "$code" =~ ^2 ]]; then
     printf "✅ %-32s %s\n" "$label" "$code"
+    rm -f "$body_file"
     return 0
   else
     printf "❌ %-32s %s\n" "$label" "$code" >&2
+    if [ -s "$body_file" ]; then
+      echo "---- response body ----" >&2
+      cat "$body_file" >&2
+      echo "-----------------------" >&2
+    fi
+    rm -f "$body_file"
     return 1
   fi
 }

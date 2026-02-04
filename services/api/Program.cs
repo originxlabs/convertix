@@ -92,6 +92,31 @@ if (string.IsNullOrWhiteSpace(pdfcpuEnv))
     {
         Environment.SetEnvironmentVariable("PDFCPU_PATH", bundledPdfCpu);
         Console.WriteLine($"pdfcpu: using bundled binary at {bundledPdfCpu}");
+        if (OperatingSystem.IsLinux())
+        {
+            try
+            {
+                var chmod = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "/bin/chmod",
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+                chmod.ArgumentList.Add("+x");
+                chmod.ArgumentList.Add(bundledPdfCpu);
+                using var process = System.Diagnostics.Process.Start(chmod);
+                process?.WaitForExit();
+                if (process is null || process.ExitCode != 0)
+                {
+                    var err = process?.StandardError.ReadToEnd();
+                    Console.WriteLine($"pdfcpu: chmod failed: {err}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"pdfcpu: chmod exception: {ex.Message}");
+            }
+        }
     }
     else
     {
