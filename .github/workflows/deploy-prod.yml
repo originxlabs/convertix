@@ -259,7 +259,17 @@ jobs:
       # -----------------------------
       - name: Validate schema (PROD)
         run: |
-          curl -fs "${{ secrets.API_BASE_URL }}/health/schema" >/dev/null
+          echo "⏳ Waiting for /health/schema to be ready..."
+          for i in {1..18}; do
+            if curl -fs "${{ secrets.API_BASE_URL }}/health/schema" >/dev/null; then
+              echo "✅ Schema endpoint is healthy"
+              exit 0
+            fi
+            echo "…schema not ready yet ($i)"
+            sleep 10
+          done
+          echo "❌ /health/schema did not become healthy in time"
+          exit 1
 
       # -----------------------------
       # 11. Smoke Test (Image Engine)
