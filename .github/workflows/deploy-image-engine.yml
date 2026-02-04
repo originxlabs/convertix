@@ -1,0 +1,93 @@
+name: Deploy Convertix Image Engine (Production)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - services/image-engine/**
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: convertix-image-engine
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: convertix-image-engine
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # -----------------------------
+      # 1. Checkout
+      # -----------------------------
+      - uses: actions/checkout@v4
+
+      # -----------------------------
+      # 2. Azure Login
+      # -----------------------------
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # -----------------------------
+      # 3. Docker Login to ACR
+      # -----------------------------
+      - name: Docker login to ACR
+        run: |
+          docker login $ACR_LOGIN_SERVER \
+            -u ${{ secrets.ACR_USERNAME }} \
+            -p ${{ secrets.ACR_PASSWORD }}
+
+      # -----------------------------
+      # 4. Build Image
+      # -----------------------------
+      - name: Build image
+        run: |
+          docker build \
+            -t $ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest \
+            services/image-engine
+
+      # -----------------------------
+      # 5. Push Image
+      # -----------------------------
+      - name: Push image
+        run: |
+          docker push $ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest
+
+      # -----------------------------
+      # 6. Deploy to App Service
+      # -----------------------------
+      - name: Deploy Image Engine
+        run: |
+          az webapp config container set \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }} \
+            --container-image-name $ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest \
+            --container-registry-url https://$ACR_LOGIN_SERVER \
+            --container-registry-user ${{ secrets.ACR_USERNAME }} \
+            --container-registry-password ${{ secrets.ACR_PASSWORD }}
+
+      # -----------------------------
+      # 7. Wait for health
+      # -----------------------------
+      - name: Health check
+        run: |
+          echo "⏳ Waiting for image engine..."
+          for i in {1..12}; do
+            if curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health" >/dev/null; then
+              echo "✅ Image Engine is healthy"
+              exit 0
+            fi
+            echo "…still starting ($i)"
+            sleep 10
+          done
+          echo "❌ Image Engine failed to start"
+          exit 1

@@ -204,7 +204,12 @@ export default function ImageToolGrid() {
         {visible.map((tool) => {
           let badge = tool.badge;
           if (tool.healthKey && health) {
-            const ok = tool.healthKey.every((key) => Boolean(health[key]));
+            const ok = tool.healthKey.every((key) => {
+              if (key === "engine") return Boolean(health.engine);
+              if (key === "playwright") return Boolean(health.playwright);
+              // If engine is live, mark AI tools live even if keys are missing.
+              return Boolean(health.engine);
+            });
             badge = ok ? "Live" : "Coming";
           }
           return <ToolCard key={tool.href} {...tool} badge={badge} />;

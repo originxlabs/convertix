@@ -54,10 +54,12 @@ public class HealthController : ControllerBase
         var ocrmypdf = CheckBinary("ocrmypdf");
 
         var playwright = false;
+        var imageEngineBase = _configuration["IMAGE_ENGINE_BASE_URL"]
+            ?? Environment.GetEnvironmentVariable("IMAGE_ENGINE_URL")
+            ?? "http://localhost:7071";
         try
         {
             var client = _httpClientFactory.CreateClient();
-            var imageEngineBase = Environment.GetEnvironmentVariable("IMAGE_ENGINE_URL") ?? "http://localhost:7071";
             var response = await client.GetAsync($"{imageEngineBase}/health/tools");
             if (response.IsSuccessStatusCode)
             {
@@ -77,7 +79,8 @@ public class HealthController : ControllerBase
             pandoc,
             pdfcpu,
             playwright,
-            ocrmypdf
+            ocrmypdf,
+            imageEngineBaseUrl = imageEngineBase
         });
     }
 

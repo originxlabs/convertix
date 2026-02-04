@@ -42,11 +42,15 @@ jobs:
       # -----------------------------
       # 3. Install sqlcmd
       # -----------------------------
-      - name: Install sqlcmd
+      - name: Install sqlcmd (Microsoft repo)
         run: |
           sudo apt-get update -y
-          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
-          echo "/opt/mssql-tools/bin" >> $GITHUB_PATH
+          sudo apt-get install -y curl apt-transport-https gnupg
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/24.04/prod noble main" | sudo tee /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get update -y
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
+          echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
 
       # -----------------------------
       # 4. Run DB migrations
@@ -216,7 +220,14 @@ jobs:
           curl -fs "${{ secrets.API_BASE_URL }}/health/schema" >/dev/null
 
       # -----------------------------
-      # 11. Smoke Test (PROD)
+      # 11. Smoke Test (Image Engine)
+      # -----------------------------
+      - name: Smoke test image engine
+        run: |
+          curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" >/dev/null
+
+      # -----------------------------
+      # 12. Smoke Test (PROD)
       # -----------------------------
       - name: Run smoke tests
         run: |
