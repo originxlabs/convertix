@@ -12,7 +12,7 @@ mkdir -p /tmp/convertix
 # Load local environment variables if available.
 if [ -f "$ROOT_DIR/.env.local" ]; then
   set -a
-  # shellcheck disable=SC1090
+  # shellcheck source=/dev/null
   source "$ROOT_DIR/.env.local"
   set +a
 fi
@@ -25,19 +25,27 @@ fi
 is_port_free() {
   local port="$1"
   if command -v lsof >/dev/null 2>&1; then
-    ! lsof -iTCP:"$port" -sTCP:LISTEN -n -P >/dev/null 2>&1
+    if lsof -iTCP:"$port" -sTCP:LISTEN -n -P >/dev/null 2>&1; then
+      return 1
+    fi
     return
   fi
   if command -v nc >/dev/null 2>&1; then
-    ! nc -z 127.0.0.1 "$port" >/dev/null 2>&1
+    if nc -z 127.0.0.1 "$port" >/dev/null 2>&1; then
+      return 1
+    fi
     return
   fi
   if command -v ss >/dev/null 2>&1; then
-    ! ss -ltn "sport = :$port" | tail -n +2 | grep -q .
+    if ss -ltn "sport = :$port" | tail -n +2 | grep -q .; then
+      return 1
+    fi
     return
   fi
   if command -v netstat >/dev/null 2>&1; then
-    ! netstat -an | grep -E "\\.${port}\\s" | grep -q LISTEN
+    if netstat -an | grep -E "\\.${port}\\s" | grep -q LISTEN; then
+      return 1
+    fi
     return
   fi
   return 0
