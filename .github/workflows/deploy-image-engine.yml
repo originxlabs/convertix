@@ -17,6 +17,7 @@ concurrency:
 env:
   IMAGE_NAME: convertix-image-engine
   ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+  IMAGE_PORT: "7071"
 
 jobs:
   deploy:
@@ -52,8 +53,9 @@ jobs:
       - name: Build image
         run: |
           docker build \
+            -f services/image-engine/Dockerfile \
             -t $ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest \
-            services/image-engine
+            .
 
       # -----------------------------
       # 5. Push Image
@@ -65,15 +67,30 @@ jobs:
       # -----------------------------
       # 6. Deploy to App Service
       # -----------------------------
-      - name: Deploy Image Engine
+      - name: Ensure Image Engine App Service exists
+        run: |
+          if ! az webapp show --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}" >/dev/null 2>&1; then
+            az webapp create \
+              --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+              --plan "${{ secrets.AZURE_APP_SERVICE_PLAN }}" \
+              --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}" \
+              --deployment-container-image-name "$ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest"
+          fi
+
+      - name: Configure container settings
         run: |
           az webapp config container set \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name ${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }} \
-            --container-image-name $ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest \
-            --container-registry-url https://$ACR_LOGIN_SERVER \
-            --container-registry-user ${{ secrets.ACR_USERNAME }} \
-            --container-registry-password ${{ secrets.ACR_PASSWORD }}
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}" \
+            --container-image-name "$ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest" \
+            --container-registry-url "https://$ACR_LOGIN_SERVER" \
+            --container-registry-user "${{ secrets.ACR_USERNAME }}" \
+            --container-registry-password "${{ secrets.ACR_PASSWORD }}"
+
+          az webapp config appsettings set \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}" \
+            --settings PORT=${{ env.IMAGE_PORT }} WEBSITES_PORT=${{ env.IMAGE_PORT }}
 
       # -----------------------------
       # 7. Wait for health
@@ -82,7 +99,7 @@ jobs:
         run: |
           echo "⏳ Waiting for image engine..."
           for i in {1..12}; do
-            if curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health" >/dev/null; then
+            if curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" >/dev/null; then
               echo "✅ Image Engine is healthy"
               exit 0
             fi
