@@ -33,10 +33,16 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var jwtKey = builder.Configuration["JWT_KEY"];
+var env = builder.Environment.EnvironmentName;
 
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
-    Console.WriteLine("WARNING: JWT_KEY is missing. Auth will not work.");
+    if (env == Environments.Production)
+    {
+        throw new InvalidOperationException("JWT_KEY is required in Production.");
+    }
+
+    Console.WriteLine("WARNING: JWT_KEY missing. Using dev fallback key.");
     jwtKey = "TEMP_DEV_KEY_CHANGE_ME";
 }
 
@@ -91,11 +97,6 @@ app.UseSwaggerUI(options =>
 });
 
 app.MapControllers();
-
-app.MapGet("/health", () => Results.Ok(new {
-    status = "ok",
-    jwt = !string.IsNullOrWhiteSpace(builder.Configuration["JWT_KEY"])
-}));
 
 
 app.Run();
