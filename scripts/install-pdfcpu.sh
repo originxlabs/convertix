@@ -72,9 +72,9 @@ if [[ -z "${asset_url}" ]]; then
   echo "❌ Could not resolve a download URL for pdfcpu ${PDFCPU_VERSION}." >&2
   if [[ -n "${release_json}" ]]; then
     echo "Available assets:" >&2
-    echo "${release_json}" | python3 - <<'PY'
-import json, sys
-release = json.load(sys.stdin)
+    RELEASE_JSON="${release_json}" python3 - <<'PY'
+import json, os
+release = json.loads(os.environ.get('RELEASE_JSON', '{}'))
 for asset in release.get('assets', []):
     print(f"- {asset.get('name','')} ({asset.get('browser_download_url','')})")
 PY

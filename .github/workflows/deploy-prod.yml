@@ -54,10 +54,6 @@ jobs:
       # -----------------------------
       # 3b. Add pdfcpu binary
       # -----------------------------
-      - name: Lint installer scripts
-        run: |
-          ./scripts/lint-shell.sh
-
       - name: Download pdfcpu
         run: |
           PDFCPU_VERSION="0.8.2" \

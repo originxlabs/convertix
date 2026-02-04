@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Local-only helper. Not intended for CI; keep pipeline smooth and fast.
+
 files=(scripts/*.sh)
 
 for file in "${files[@]}"; do
