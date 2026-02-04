@@ -3,8 +3,7 @@ import { test, expect } from "@playwright/test";
 test("PDF Studio tool grid renders and each tool route loads", async ({ page }) => {
   await page.goto("/x-pdf", { waitUntil: "domcontentloaded" });
 
-  const heading = page.getByRole("heading", { name: /professional pdf workflows/i });
-  await expect(heading).toBeVisible();
+  await expect(page.getByText("PDF STUDIO", { exact: true })).toBeVisible();
 
   const cards = page.locator("[data-tool-card]");
   const cardCount = await cards.count();

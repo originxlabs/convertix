@@ -1,0 +1,12 @@
+{
+  "tables": {
+    "orgs": ["org_id", "name", "plan_tier", "created_at"],
+    "users": ["user_id", "org_id", "email", "password_hash", "password_salt", "created_at"],
+    "org_members": ["user_id", "org_id", "role", "created_at"],
+    "tiers": ["tier", "name", "description", "sort_order"],
+    "pricing": ["tier", "price_monthly", "price_yearly", "currency", "sort_order"],
+    "org_subscriptions": ["subscription_id", "org_id", "tier", "status", "current_period_start", "current_period_end", "cancel_at_period_end", "provider", "provider_subscription_id", "created_at", "updated_at"],
+    "user_entitlements": ["user_id", "tier", "expires_at", "org_id"],
+    "billing_snapshots": ["org_id", "tier", "usage_data", "created_at"]
+  }
+}

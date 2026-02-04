@@ -214,36 +214,7 @@ const toolMap: Record<string, ToolConfig> = {
       />
     )
   },
-  "remove-pages": {
-    title: "Remove Pages",
-    description: "Delete selected pages from a PDF.",
-    component: <RemovePagesTool />
-  },
-  "extract-pages": {
-    title: "Extract Pages",
-    description: "Export selected pages into a new PDF.",
-    component: <ExtractPagesTool />
-  },
-  "rotate-pdf": {
-    title: "Rotate PDF",
-    description: "Rotate pages for correct orientation.",
-    component: <RotatePdfTool />
-  },
-  "add-page-numbers": {
-    title: "Add Page Numbers",
-    description: "Insert page numbers into a PDF.",
-    component: <PageNumbersTool />
-  },
-  "add-watermark": {
-    title: "Add Watermark",
-    description: "Stamp watermarks across pages.",
-    component: <WatermarkPdfTool />
-  },
-  "repair-pdf": {
-    title: "Repair PDF",
-    description: "Fix broken PDFs and recover structure.",
-    component: <RepairPdfTool />
-  },
+  // Duplicate tool definitions removed below (defined later in the PDF section).
   "image-meme": {
     title: "Meme Generator",
     description: "Create meme templates with captions.",

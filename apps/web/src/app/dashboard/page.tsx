@@ -99,7 +99,7 @@ export default function DashboardPage() {
     }
     if (payload.status === "trial") {
       setCheckoutStatus("Trial activated. All features unlocked.");
-      setEntitlement({ tier: payload.tier, expiresAt: payload.expiresAt, orgId: null });
+      setEntitlement({ tier: payload.tier, expiresAt: payload.expiresAt, orgId: payload.orgId ?? undefined });
       return;
     }
     if (payload.short_url) {

@@ -27,6 +27,8 @@ builder.Services.AddSingleton<PdfEditor.Api.Services.EmailService>();
 builder.Services.AddSingleton<PdfEditor.Api.Services.UserStore>();
 builder.Services.AddSingleton<PdfEditor.Api.Services.JwtTokenService>();
 builder.Services.AddSingleton<PdfEditor.Api.Services.TokenRevocationStore>();
+builder.Services.AddSingleton<PdfEditor.Api.Services.SchemaValidator>();
+builder.Services.AddHostedService<PdfEditor.Api.Services.SchemaValidationHostedService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

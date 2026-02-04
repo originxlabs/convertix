@@ -40,14 +40,139 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # -----------------------------
-      # 3. Login to ACR
+      # 3. Install sqlcmd
+      # -----------------------------
+      - name: Install sqlcmd
+        run: |
+          sudo apt-get update -y
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
+          echo "/opt/mssql-tools/bin" >> $GITHUB_PATH
+
+      # -----------------------------
+      # 4. Run DB migrations
+      # -----------------------------
+      - name: Apply Azure SQL schema
+        env:
+          AZURE_SQL_CONNECTION: ${{ secrets.AZURE_SQL_CONNECTION }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          conn = os.environ["AZURE_SQL_CONNECTION"]
+          parts = {}
+          for chunk in conn.split(';'):
+            if not chunk.strip():
+              continue
+            key, _, value = chunk.partition('=')
+            parts[key.strip().lower()] = value.strip()
+          server = parts.get('server') or parts.get('data source')
+          if server and server.startswith('tcp:'):
+            server = server[4:]
+          database = parts.get('database') or parts.get('initial catalog')
+          user = parts.get('user id') or parts.get('uid') or parts.get('user')
+          password = parts.get('password') or parts.get('pwd')
+          if not all([server, database, user, password]):
+            raise SystemExit("Missing required fields in AZURE_SQL_CONNECTION")
+          # sqlcmd wants server without tcp: prefix and with port if provided.
+          print(server)
+          print(database)
+          print(user)
+          print(password)
+          PY
+          SERVER=$(python3 - <<'PY'
+          import os
+          parts = {}
+          for chunk in os.environ["AZURE_SQL_CONNECTION"].split(';'):
+            if not chunk.strip():
+              continue
+            key, _, value = chunk.partition('=')
+            parts[key.strip().lower()] = value.strip()
+          server = parts.get('server') or parts.get('data source')
+          if server and server.startswith('tcp:'):
+            server = server[4:]
+          print(server)
+          PY
+          )
+          DATABASE=$(python3 - <<'PY'
+          import os
+          parts = {}
+          for chunk in os.environ["AZURE_SQL_CONNECTION"].split(';'):
+            if not chunk.strip():
+              continue
+            key, _, value = chunk.partition('=')
+            parts[key.strip().lower()] = value.strip()
+          print(parts.get('database') or parts.get('initial catalog'))
+          PY
+          )
+          USER=$(python3 - <<'PY'
+          import os
+          parts = {}
+          for chunk in os.environ["AZURE_SQL_CONNECTION"].split(';'):
+            if not chunk.strip():
+              continue
+            key, _, value = chunk.partition('=')
+            parts[key.strip().lower()] = value.strip()
+          print(parts.get('user id') or parts.get('uid') or parts.get('user'))
+          PY
+          )
+          PASSWORD=$(python3 - <<'PY'
+          import os
+          parts = {}
+          for chunk in os.environ["AZURE_SQL_CONNECTION"].split(';'):
+            if not chunk.strip():
+              continue
+            key, _, value = chunk.partition('=')
+            parts[key.strip().lower()] = value.strip()
+          print(parts.get('password') or parts.get('pwd'))
+          PY
+          )
+          sqlcmd -S "$SERVER" -d "$DATABASE" -U "$USER" -P "$PASSWORD" -i services/api/SQL/schema.azure.sql
+
+      # -----------------------------
+      # 5. Schema diff
+      # -----------------------------
+      - name: Schema diff (Azure SQL)
+        env:
+          AZURE_SQL_CONNECTION: ${{ secrets.AZURE_SQL_CONNECTION }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          import tempfile
+          from pathlib import Path
+
+          conn = os.environ["AZURE_SQL_CONNECTION"]
+          parts = {}
+          for chunk in conn.split(';'):
+            if not chunk.strip():
+              continue
+            key, _, value = chunk.partition('=')
+            parts[key.strip().lower()] = value.strip()
+          server = parts.get('server') or parts.get('data source')
+          if server and server.startswith('tcp:'):
+            server = server[4:]
+          database = parts.get('database') or parts.get('initial catalog')
+          user = parts.get('user id') or parts.get('uid') or parts.get('user')
+          password = parts.get('password') or parts.get('pwd')
+          if not all([server, database, user, password]):
+            raise SystemExit("Missing required fields in AZURE_SQL_CONNECTION")
+
+          expected = json.loads(Path("services/api/SQL/schema.expect.json").read_text())
+          table_names = list(expected["tables"].keys())
+          quoted = ",".join([f"'{t}'" for t in table_names])
+          query = f\"\"\"\n+          SET NOCOUNT ON;\n+          SELECT t.name AS table_name, c.name AS column_name\n+          FROM sys.tables t\n+          JOIN sys.columns c ON c.object_id = t.object_id\n+          WHERE t.name IN ({quoted})\n+          ORDER BY t.name, c.column_id;\n+          \"\"\"\n+
+          cmd = [\"sqlcmd\", \"-S\", server, \"-d\", database, \"-U\", user, \"-P\", password, \"-W\", \"-s\", \"|\", \"-Q\", query]\n+          output = subprocess.check_output(cmd, text=True)\n+          lines = [line.strip() for line in output.splitlines() if line.strip() and \"table_name\" not in line]\n+          actual = {}\n+          for line in lines:\n+            if line.startswith(\"-\"):\n+              continue\n+            parts = [p.strip() for p in line.split(\"|\")]\n+            if len(parts) != 2:\n+              continue\n+            table, column = parts\n+            actual.setdefault(table, set()).add(column)\n+\n+          missing_tables = []\n+          missing_columns = {}\n+          for table, cols in expected[\"tables\"].items():\n+            if table not in actual:\n+              missing_tables.append(table)\n+              continue\n+            missing = [c for c in cols if c not in actual[table]]\n+            if missing:\n+              missing_columns[table] = missing\n+\n+          if missing_tables or missing_columns:\n+            print(\"Schema diff detected\")\n+            if missing_tables:\n+              print(\"Missing tables:\", \", \".join(missing_tables))\n+            if missing_columns:\n+              for table, cols in missing_columns.items():\n+                print(f\"Missing columns {table}: {', '.join(cols)}\")\n+            raise SystemExit(1)\n+          print(\"Schema diff: OK\")\n+          PY
+
+      # -----------------------------
+      # 6. Login to ACR
       # -----------------------------
       - name: Docker login to ACR
         run: |
           echo "${{ secrets.ACR_PASSWORD }}" | docker login "${{ secrets.ACR_LOGIN_SERVER }}" -u "${{ secrets.ACR_USERNAME }}" --password-stdin
 
       # -----------------------------
-      # 4. Build + Push Image
+      # 7. Build + Push Image
       # -----------------------------
       - name: Build and push Docker image
         run: |
@@ -58,7 +183,7 @@ jobs:
           echo "IMAGE_REF=$IMAGE_REF" >> $GITHUB_ENV
 
       # -----------------------------
-      # 5. Deploy Image to App Service
+      # 8. Deploy Image to App Service
       # -----------------------------
       - name: Deploy to Azure App Service (Container)
         uses: azure/webapps-deploy@v3
@@ -67,7 +192,7 @@ jobs:
           images: ${{ env.IMAGE_REF }}
 
       # -----------------------------
-      # 6. Wait for App to be Ready
+      # 9. Wait for App to be Ready
       # -----------------------------
       - name: Wait for app startup
         run: |
@@ -84,7 +209,14 @@ jobs:
           exit 1
 
       # -----------------------------
-      # 7. Smoke Test (PROD)
+      # 10. Validate schema
+      # -----------------------------
+      - name: Validate schema (PROD)
+        run: |
+          curl -fs "${{ secrets.API_BASE_URL }}/health/schema" >/dev/null
+
+      # -----------------------------
+      # 11. Smoke Test (PROD)
       # -----------------------------
       - name: Run smoke tests
         run: |

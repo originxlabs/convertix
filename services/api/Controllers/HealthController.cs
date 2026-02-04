@@ -81,6 +81,30 @@ public class HealthController : ControllerBase
         });
     }
 
+    [HttpGet("schema")]
+    public async Task<IActionResult> Schema([FromServices] PdfEditor.Api.Services.SchemaValidator validator)
+    {
+        var (ok, message, report) = await validator.ValidateAsync();
+        if (!ok)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                status = "error",
+                message,
+                missingTables = report.MissingTables,
+                missingColumns = report.MissingColumns
+            });
+        }
+
+        return Ok(new
+        {
+            status = "ok",
+            message,
+            missingTables = report.MissingTables,
+            missingColumns = report.MissingColumns
+        });
+    }
+
     private static bool CheckBinary(string name)
     {
         try
