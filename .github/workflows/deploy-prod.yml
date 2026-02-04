@@ -276,7 +276,17 @@ jobs:
       # -----------------------------
       - name: Smoke test image engine
         run: |
-          curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" >/dev/null
+          echo "⏳ Waiting for image engine /health/tools..."
+          for i in {1..18}; do
+            if curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" >/dev/null; then
+              echo "✅ Image engine is healthy"
+              exit 0
+            fi
+            echo "…image engine not ready yet ($i)"
+            sleep 10
+          done
+          echo "❌ Image engine did not become healthy in time"
+          exit 1
 
       # -----------------------------
       # 12. Smoke Test (PROD)
