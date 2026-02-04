@@ -54,29 +54,20 @@ jobs:
       # -----------------------------
       # 3b. Add pdfcpu binary
       # -----------------------------
+      - name: Lint installer scripts
+        run: |
+          ./scripts/lint-shell.sh
+
       - name: Download pdfcpu
         run: |
-          set -e
-
-          PDFCPU_VERSION="0.8.2"
-          PDFCPU_TAR="pdfcpu_${PDFCPU_VERSION}_linux_amd64.tar.gz"
-          PDFCPU_URL="https://github.com/pdfcpu/pdfcpu/releases/download/v${PDFCPU_VERSION}/${PDFCPU_TAR}"
-
-          echo "⬇️ Downloading pdfcpu from:"
-          echo "$PDFCPU_URL"
-
-          mkdir -p ${{ env.PUBLISH_DIR }}/tools
-          curl -fL "$PDFCPU_URL" -o /tmp/pdfcpu.tar.gz
-
-          echo "📦 Extracting pdfcpu..."
-          tar -xzf /tmp/pdfcpu.tar.gz -C /tmp
-
-          echo "📁 Installing binary..."
-          cp /tmp/pdfcpu/pdfcpu ${{ env.PUBLISH_DIR }}/tools/pdfcpu
-          chmod +x ${{ env.PUBLISH_DIR }}/tools/pdfcpu
-
-          echo "✅ pdfcpu installed:"
-          ${{ env.PUBLISH_DIR }}/tools/pdfcpu version
+          PDFCPU_VERSION="0.8.2" \
+          PDFCPU_PINNED_URL="${{ secrets.PDFCPU_PINNED_URL }}" \
+          PUBLISH_DIR="${{ env.PUBLISH_DIR }}" \
+          ./scripts/install-pdfcpu.sh
+      - name: Verify pdfcpu binary
+        run: |
+          test -x "${{ env.PUBLISH_DIR }}/tools/pdfcpu"
+          "${{ env.PUBLISH_DIR }}/tools/pdfcpu" version
 
 
       # -----------------------------
