@@ -4,6 +4,14 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: convertix-prod
+  cancel-in-progress: true
+
 env:
   DOTNET_VERSION: "8.0.x"
   API_PROJECT: services/api/PdfEditor.Api.csproj
@@ -31,7 +39,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       # -----------------------------
-      # 3. Restore + Build + Publish
+      # 3. Restore + Publish
       # -----------------------------
       - name: Restore dependencies
         run: dotnet restore ${{ env.API_PROJECT }}
@@ -53,13 +61,14 @@ jobs:
           echo "✅ Build output validated"
 
       # -----------------------------
-      # 5. Zip (Run-From-Package format)
+      # 5. Create Run-From-Package zip
       # -----------------------------
       - name: Create deployment zip
         run: |
+          rm -f ${{ env.ZIP_PATH }}
           cd ${{ env.PUBLISH_DIR }}
-          zip -r ../../../${{ env.ZIP_PATH }} .
-          cd ../../../
+          zip -r $GITHUB_WORKSPACE/${{ env.ZIP_PATH }} .
+          cd $GITHUB_WORKSPACE
           unzip -l ${{ env.ZIP_PATH }} | head -20
 
       # -----------------------------
@@ -80,10 +89,21 @@ jobs:
           package: ${{ env.ZIP_PATH }}
 
       # -----------------------------
-      # 8. Wait for Startup
+      # 8. Wait for App to be Ready
       # -----------------------------
       - name: Wait for app startup
-        run: sleep 25
+        run: |
+          echo "⏳ Waiting for app to become healthy..."
+          for i in {1..12}; do
+            if curl -fs "${{ secrets.API_BASE_URL }}/health" >/dev/null; then
+              echo "✅ App is up"
+              exit 0
+            fi
+            echo "…still starting ($i)"
+            sleep 10
+          done
+          echo "❌ App did not become healthy in time"
+          exit 1
 
       # -----------------------------
       # 9. Smoke Test (PROD)

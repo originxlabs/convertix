@@ -15,7 +15,7 @@ public class HealthController : ControllerBase
     }
 
     [HttpGet]
-    public IActionResult Get() => Ok(new { status = "ok" });
+    public IActionResult Get() => Ok(new { status = "ok", timestamp = DateTimeOffset.UtcNow });
 
     [HttpGet("db")]
     public async Task<IActionResult> Db()

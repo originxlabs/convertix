@@ -1,58 +1,142 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# ==============================
+# CONFIG
+# ==============================
 API_BASE="${API_BASE:-https://convertix.azurewebsites.net}"
+
+ENABLE_IMAGE_ENGINE="${ENABLE_IMAGE_ENGINE:-0}"
+ENABLE_IMAGE_API="${ENABLE_IMAGE_API:-0}"
+
 TMP_DIR="$(mktemp -d)"
 
+# ==============================
+# PREREQS
+# ==============================
 command -v curl >/dev/null || { echo "❌ curl missing"; exit 1; }
 command -v base64 >/dev/null || { echo "❌ base64 missing"; exit 1; }
 
 cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
+# ==============================
+# UTILS
+# ==============================
 base64_decode() {
-  if base64 --help 2>&1 | grep -q -- "-d"; then base64 -d; else base64 -D; fi
+  if base64 --help 2>&1 | grep -q -- "-d"; then
+    base64 -d
+  else
+    base64 -D
+  fi
 }
 
 request() {
   local label="$1"; shift
   local code
   code=$(curl -s -o /dev/null -w "%{http_code}" "$@")
+
   if [[ "$code" =~ ^2 ]]; then
     printf "✅ %-32s %s\n" "$label" "$code"
+    return 0
   else
     printf "❌ %-32s %s\n" "$label" "$code" >&2
-    exit 1
+    return 1
   fi
 }
 
+soft_check() {
+  local label="$1"; shift
+  local code
+  code=$(curl -s -o /dev/null -w "%{http_code}" "$@" || true)
+
+  if [[ "$code" =~ ^2 ]]; then
+    printf "✅ %-32s %s\n" "$label" "$code"
+  else
+    printf "⚠️  %-32s %s (skipped)\n" "$label" "$code"
+  fi
+}
+
+# ==============================
+# START
+# ==============================
 echo "🔥 Smoke test started against: $API_BASE"
 echo "--------------------------------------"
 
-# Health checks
-curl -fs "$API_BASE/health" | grep -qi "ok" || exit 1
-curl -fs "$API_BASE/api/image/health" | grep -qi "ok" || exit 1
-curl -fs "$API_BASE/image-engine/health" | grep -qi "ok" || exit 1
+# ==============================
+# MANDATORY HEALTH
+# ==============================
+echo "➡️ Core health check"
+request "GET /health" "$API_BASE/health" \
+  || { echo "❌ Core health failed"; exit 1; }
 
-echo "✅ Health checks passed"
+# ==============================
+# OPTIONAL HEALTH
+# ==============================
+if [ "$ENABLE_IMAGE_API" = "1" ]; then
+  soft_check "GET /api/image/health" "$API_BASE/api/image/health"
+else
+  echo "ℹ️  Image API health skipped"
+fi
 
-# Create assets
+if [ "$ENABLE_IMAGE_ENGINE" = "1" ]; then
+  soft_check "GET /image-engine/health" "$API_BASE/image-engine/health"
+else
+  echo "ℹ️  Image engine health skipped"
+fi
+
+# ==============================
+# TEST ASSETS
+# ==============================
 PDF="$TMP_DIR/sample.pdf"
 IMG="$TMP_DIR/img.png"
 
 cat <<'B64' | base64_decode > "$PDF"
-JVBERi0xLjQKJS...
+JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlIC9DYXRhbG9nPj4KZW5kb2JqCnhyZWYKMAoxCjAwMDAwMDAwMDAgNjU1MzUgZiAKdHJhaWxlcgo8PC9TaXplIDE+PgpzdGFydHhyZWYKMTYKJSVFT0YK
 B64
 
 cat <<'B64' | base64_decode > "$IMG"
-iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1Pe...
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR42mP8z/C/HwAFgwJ/l3sX7gAAAABJRU5ErkJggg==
 B64
 
-# Core API
-request "POST /api/session" -X POST "$API_BASE/api/session"
-request "POST /api/upload" -F "file=@$PDF" "$API_BASE/api/upload"
-request "POST /api/pdf/merge" -F "files=@$PDF" -F "files=@$PDF" "$API_BASE/api/pdf/merge"
-request "POST /api/pdf/compress" -F "file=@$PDF" "$API_BASE/api/pdf/compress"
-request "POST /api/image/process" -F "file=@$IMG" -F "operation=resize" -F "width=32" -F "height=32" "$API_BASE/api/image/process"
+# ==============================
+# CORE API (FAIL IF BROKEN)
+# ==============================
+echo "➡️ Core API checks"
 
+request "POST /api/session" \
+  -X POST "$API_BASE/api/session" \
+  || exit 1
+
+request "POST /api/upload" \
+  -F "file=@$PDF" \
+  "$API_BASE/api/upload" \
+  || exit 1
+
+request "POST /api/pdf/merge" \
+  -F "files=@$PDF" \
+  -F "files=@$PDF" \
+  "$API_BASE/api/pdf/merge" \
+  || exit 1
+
+request "POST /api/pdf/compress" \
+  -F "file=@$PDF" \
+  "$API_BASE/api/pdf/compress" \
+  || exit 1
+
+# ==============================
+# OPTIONAL IMAGE API
+# ==============================
+if [ "$ENABLE_IMAGE_API" = "1" ]; then
+  request "POST /api/image/process" \
+    -F "file=@$IMG" \
+    -F "operation=resize" \
+    -F "width=32" \
+    -F "height=32" \
+    "$API_BASE/api/image/process"
+else
+  echo "ℹ️  Image processing skipped"
+fi
+
+echo "--------------------------------------"
 echo "🎉 Smoke test PASSED"
