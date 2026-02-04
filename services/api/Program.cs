@@ -91,6 +91,19 @@ if (string.IsNullOrWhiteSpace(pdfcpuEnv))
     if (File.Exists(bundledPdfCpu))
     {
         Environment.SetEnvironmentVariable("PDFCPU_PATH", bundledPdfCpu);
+        Console.WriteLine($"pdfcpu: using bundled binary at {bundledPdfCpu}");
+    }
+    else
+    {
+        Console.WriteLine($"pdfcpu: bundled binary not found at {bundledPdfCpu}");
+    }
+}
+else
+{
+    Console.WriteLine($"pdfcpu: using configured PDFCPU_PATH={pdfcpuEnv}");
+    if (!File.Exists(pdfcpuEnv))
+    {
+        Console.WriteLine("pdfcpu: configured PDFCPU_PATH does not exist on disk.");
     }
 }
 
