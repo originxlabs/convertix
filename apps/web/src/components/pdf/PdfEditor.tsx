@@ -231,10 +231,14 @@ export default function PdfEditor() {
 
   const onViewport = useCallback(
     (width: number, height: number) => {
-      setViewportSize({ width, height });
-      setDocMeta({ pageWidth: width / scale, pageHeight: height / scale });
+      setViewportSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+      const nextPageWidth = width / scale;
+      const nextPageHeight = height / scale;
+      if (Math.abs(doc.pageWidth - nextPageWidth) > 0.1 || Math.abs(doc.pageHeight - nextPageHeight) > 0.1) {
+        setDocMeta({ pageWidth: nextPageWidth, pageHeight: nextPageHeight });
+      }
     },
-    [setDocMeta, scale]
+    [doc.pageHeight, doc.pageWidth, scale, setDocMeta]
   );
 
   const stageSize = useMemo(
@@ -242,32 +246,38 @@ export default function PdfEditor() {
     [viewportSize]
   );
 
-  const addTextAt = (x: number, y: number, text?: string, width?: number, height?: number) => {
-    const overlay: TextOverlay = {
-      id: nanoid(),
-      type: "text",
-      page: pageIndex,
-      x,
-      y,
-      width: width ? width / scale : 200 / scale,
-      height: height ? height / scale : 40 / scale,
-      text: text ?? "New text",
-      fontSize: 20,
-      color: "#1c2230"
-    };
-    addOverlay(overlay);
-    selectOverlay(overlay.id);
-    setPendingEditId(overlay.id);
-  };
+  const addTextAt = useCallback(
+    (x: number, y: number, text?: string, width?: number, height?: number) => {
+      const overlay: TextOverlay = {
+        id: nanoid(),
+        type: "text",
+        page: pageIndex,
+        x,
+        y,
+        width: width ? width / scale : 200 / scale,
+        height: height ? height / scale : 40 / scale,
+        text: text ?? "New text",
+        fontSize: 20,
+        color: "#1c2230"
+      };
+      addOverlay(overlay);
+      selectOverlay(overlay.id);
+      setPendingEditId(overlay.id);
+    },
+    [addOverlay, pageIndex, scale, selectOverlay]
+  );
 
-  const handleCanvasClick = (x: number, y: number) => {
-    if (editMode) {
-      addTextAt(x, y);
-      setDebugInfo((prev) => ({ ...prev, lastEvent: "canvas:click" }));
-    }
-  };
+  const handleCanvasClick = useCallback(
+    (x: number, y: number) => {
+      if (editMode) {
+        addTextAt(x, y);
+        setDebugInfo((prev) => ({ ...prev, lastEvent: "canvas:click" }));
+      }
+    },
+    [addTextAt, editMode]
+  );
 
-  const handleStageClick = () => {
+  const handleStageClick = useCallback(() => {
     if (tool === "Text") {
       addTextAt(80 / scale, 120 / scale);
       return;
@@ -345,7 +355,46 @@ export default function PdfEditor() {
     }
 
     selectOverlay(undefined);
-  };
+  }, [addOverlay, addTextAt, pageIndex, scale, selectOverlay, tool]);
+
+  const handleSelectOverlay = useCallback((id?: string) => selectOverlay(id), [selectOverlay]);
+
+  const handleMoveOverlay = useCallback(
+    (id: string, x: number, y: number) => updateOverlay(id, { x, y }),
+    [updateOverlay]
+  );
+
+  const handleTextChange = useCallback(
+    (id: string, text: string) => updateOverlay(id, { text }),
+    [updateOverlay]
+  );
+
+  const handleFabricReady = useCallback(
+    (ready: boolean) =>
+      setDebugInfo((prev) => ({ ...prev, fabricReady: ready, lastEvent: "fabric:ready" })),
+    []
+  );
+
+  const handleEditingChange = useCallback(
+    (editing: boolean, id?: string) =>
+      setDebugInfo((prev) => ({
+        ...prev,
+        editing,
+        selectedId: id ?? prev.selectedId,
+        lastEvent: editing ? "text:editing:entered" : "text:editing:exited"
+      })),
+    []
+  );
+
+  const handleSelectionChange = useCallback(
+    (id?: string) =>
+      setDebugInfo((prev) => ({
+        ...prev,
+        selectedId: id,
+        lastEvent: id ? "selection:created/updated" : "selection:cleared"
+      })),
+    []
+  );
 
   const addImageOverlay = async (file: File, kind: "image" | "signature") => {
     const reader = new FileReader();
@@ -776,35 +825,20 @@ export default function PdfEditor() {
                     height={stageSize.height}
                     className="pdf-fabric-layer"
                     onMouseDown={handleStageClick}
-                    onAddTextAt={(x, y) => addTextAt(x, y)}
-                    onCanvasClick={(x, y) => handleCanvasClick(x, y)}
+                    onAddTextAt={addTextAt}
+                    onCanvasClick={handleCanvasClick}
                     pendingEditId={pendingEditId}
                     onPendingEditHandled={() => setPendingEditId(null)}
                     overlays={doc.overlays}
                     pageIndex={pageIndex}
                     scale={scale}
                     selectedId={selectedId}
-                    onSelectOverlay={(id) => selectOverlay(id)}
-                    onMoveOverlay={(id, x, y) => updateOverlay(id, { x, y })}
-                    onTextChange={(id, text) => updateOverlay(id, { text })}
-                    onReady={(ready) =>
-                      setDebugInfo((prev) => ({ ...prev, fabricReady: ready, lastEvent: "fabric:ready" }))
-                    }
-                    onEditingChange={(editing, id) =>
-                      setDebugInfo((prev) => ({
-                        ...prev,
-                        editing,
-                        selectedId: id ?? prev.selectedId,
-                        lastEvent: editing ? "text:editing:entered" : "text:editing:exited"
-                      }))
-                    }
-                    onSelectionChange={(id) =>
-                      setDebugInfo((prev) => ({
-                        ...prev,
-                        selectedId: id,
-                        lastEvent: id ? "selection:created/updated" : "selection:cleared"
-                      }))
-                    }
+                    onSelectOverlay={handleSelectOverlay}
+                    onMoveOverlay={handleMoveOverlay}
+                    onTextChange={handleTextChange}
+                    onReady={handleFabricReady}
+                    onEditingChange={handleEditingChange}
+                    onSelectionChange={handleSelectionChange}
                   />
                   <div className="pointer-events-none absolute left-4 bottom-4 rounded-xl border border-obsidian-200 bg-white/90 px-3 py-2 text-[11px] text-obsidian-700 shadow-sm">
                     <div className="font-semibold text-ink-900">Debug</div>

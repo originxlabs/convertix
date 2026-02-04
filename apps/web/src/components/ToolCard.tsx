@@ -25,6 +25,7 @@ export default function ToolCard({
     <Link href={href} className="block">
       <motion.div
         className="tool-card p-6"
+        data-tool-card
         whileHover={{ y: -1 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
       >
@@ -37,7 +38,10 @@ export default function ToolCard({
             </div>
           </div>
           {badge ? (
-            <span className="rounded-full bg-obsidian-100 px-3 py-1 text-[11px] font-semibold text-ink-900">
+            <span
+              className={`tool-badge ${badge.toLowerCase() === "live" ? "tool-badge--live" : "tool-badge--muted"}`}
+            >
+              {badge.toLowerCase() === "live" && <span className="tool-badge__dot" />}
               {badge}
             </span>
           ) : null}

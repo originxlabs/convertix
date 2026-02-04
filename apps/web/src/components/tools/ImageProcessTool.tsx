@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { applyAuthHeader } from "@/lib/auth";
 import { saveHistoryItem } from "@/lib/historyStore";
+import { getApiBase } from "@/lib/apiBase";
 
 type Field = {
   name: string;
@@ -51,10 +52,7 @@ export default function ImageProcessTool({
     }, {} as Record<string, string>)
   );
 
-  const apiBase = useMemo(
-    () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5055",
-    []
-  );
+  const apiBase = useMemo(() => getApiBase(), []);
 
   const MAX_BYTES = 200 * 1024 * 1024;
 
@@ -102,6 +100,23 @@ export default function ImageProcessTool({
         };
         xhr.onload = () => {
           if (xhr.status < 200 || xhr.status >= 300) {
+            const errorBlob = xhr.response;
+            if (errorBlob instanceof Blob) {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const message = typeof reader.result === "string"
+                  ? reader.result
+                  : "Processing failed.";
+                setStatus(message);
+                resolve(null);
+              };
+              reader.onerror = () => {
+                setStatus("Processing failed.");
+                resolve(null);
+              };
+              reader.readAsText(errorBlob);
+              return;
+            }
             const message = xhr.responseText || "Processing failed.";
             setStatus(message);
             resolve(null);

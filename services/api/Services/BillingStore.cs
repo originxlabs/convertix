@@ -78,6 +78,26 @@ public sealed class BillingStore
         );
     }
 
+    public async Task UpsertUserEntitlementAsync(string userId, string tier, DateTime? expiresAt, string? orgId)
+    {
+        const string sql = @"
+IF EXISTS (SELECT 1 FROM user_entitlements WHERE user_id = @user_id)
+BEGIN
+  UPDATE user_entitlements SET tier = @tier, expires_at = @expires_at, org_id = @org_id WHERE user_id = @user_id;
+END
+ELSE
+BEGIN
+  INSERT INTO user_entitlements (user_id, tier, expires_at, org_id) VALUES (@user_id, @tier, @expires_at, @org_id);
+END";
+        await using var conn = OpenConnection();
+        await using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("user_id", userId);
+        cmd.Parameters.AddWithValue("tier", tier);
+        cmd.Parameters.AddWithValue("expires_at", (object?)expiresAt ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("org_id", (object?)orgId ?? DBNull.Value);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     public async Task<ActivationRecord?> GetActivationByKeyAsync(string activationKey)
     {
         const string sql = "SELECT activation_key_hash, tier, expires_at, org_id, grace_period_days FROM license_keys WHERE activation_key_hash = @hash AND is_active = true;";
@@ -198,6 +218,28 @@ END";
         await logCmd.ExecuteNonQueryAsync();
 
         return await GetCreditBalanceAsync(userId);
+    }
+
+    public async Task<Dictionary<string, int>> GetUsageSummaryAsync(string userId, string monthKey)
+    {
+        const string sql = @"
+SELECT feature, SUM(amount) AS total
+FROM usage_events
+WHERE user_id = @user_id AND month_key = @month_key
+GROUP BY feature;";
+        await using var conn = OpenConnection();
+        await using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("user_id", userId);
+        cmd.Parameters.AddWithValue("month_key", monthKey);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        while (await reader.ReadAsync())
+        {
+            var feature = reader.GetString(0);
+            var total = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader.GetValue(1));
+            result[feature] = total;
+        }
+        return result;
     }
 
     public static string HashActivationKey(string key)

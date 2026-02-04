@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import ToolIcon, { type ToolIconName } from "@/components/ToolIcon";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function AppHeader() {
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">(
@@ -116,10 +117,7 @@ export default function AppHeader() {
     }
   ];
 
-  const apiBase = useMemo(
-    () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5055",
-    []
-  );
+  const apiBase = getApiBase();
 
   useEffect(() => {
     let isMounted = true;
@@ -248,6 +246,9 @@ export default function AppHeader() {
                 </svg>
               </span>
               PDF Studio
+              <span className={`nav-status nav-status--${apiStatus}`}>
+                <span className={`nav-status__dot nav-status__dot--${apiStatus}`} />
+              </span>
             </Link>
             <div
               className={`nav-menu nav-menu--pdf ${showPdfMenu ? "nav-menu--open" : ""}`}
@@ -289,6 +290,9 @@ export default function AppHeader() {
                 </svg>
               </span>
               Image Labs
+              <span className={`nav-status nav-status--${imageStatus}`}>
+                <span className={`nav-status__dot nav-status__dot--${imageStatus}`} />
+              </span>
             </Link>
             <div
               className={`nav-menu nav-menu--image ${showImageMenu ? "nav-menu--open" : ""}`}
@@ -346,15 +350,28 @@ export default function AppHeader() {
             Clear Cache
           </button>
           {isSignedIn ? (
-            <button type="button" onClick={handleLogout} className="landing-link">
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M10 7v-2h10v14H10v-2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                  <path d="M4 12h10M10 8l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              Sign out
-            </button>
+            <>
+              <Link href="/dashboard" className="landing-link">
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="8" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                    <rect x="13" y="3" width="8" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                    <rect x="3" y="13" width="8" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                    <rect x="13" y="13" width="8" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                  </svg>
+                </span>
+                Dashboard
+              </Link>
+              <button type="button" onClick={handleLogout} className="landing-link">
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 7v-2h10v14H10v-2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    <path d="M4 12h10M10 8l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                Sign out
+              </button>
+            </>
           ) : (
             <Link href="/signin" className="landing-link">
               <span className="nav-icon">

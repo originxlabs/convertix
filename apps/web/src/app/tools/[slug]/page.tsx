@@ -4,6 +4,7 @@ import HistoryGallery from "@/components/HistoryGallery";
 import ClientPdfEditor from "@/components/pdf/ClientPdfEditor";
 import CompressPdfTool from "@/components/tools/CompressPdfTool";
 import CropPdfTool from "@/components/tools/CropPdfTool";
+import ExtractPagesTool from "@/components/tools/ExtractPagesTool";
 import HtmlToImageTool from "@/components/tools/HtmlToImageTool";
 import ImageEditTool from "@/components/tools/ImageEditTool";
 import ImageAiTool from "@/components/tools/ImageAiTool";
@@ -12,14 +13,21 @@ import ImageResizeTool from "@/components/tools/ImageResizeTool";
 import ImageToPdfTool from "@/components/tools/ImageToPdfTool";
 import MergePdfTool from "@/components/tools/MergePdfTool";
 import OrganizePdfTool from "@/components/tools/OrganizePdfTool";
+import PageNumbersTool from "@/components/tools/PageNumbersTool";
 import PdfToImageTool from "@/components/tools/PdfToImageTool";
 import PdfToPagesTool from "@/components/tools/PdfToPagesTool";
 import PdfToWordTool from "@/components/tools/PdfToWordTool";
 import ProtectPdfTool from "@/components/tools/ProtectPdfTool";
+import RemovePagesTool from "@/components/tools/RemovePagesTool";
+import RepairPdfTool from "@/components/tools/RepairPdfTool";
+import RotatePdfTool from "@/components/tools/RotatePdfTool";
 import SignPdfTool from "@/components/tools/SignPdfTool";
 import SplitPdfTool from "@/components/tools/SplitPdfTool";
 import StudioScaffoldTool from "@/components/tools/StudioScaffoldTool";
+import OfficeToPdfTool from "@/components/tools/OfficeToPdfTool";
+import HtmlToPdfTool from "@/components/tools/HtmlToPdfTool";
 import UnlockPdfTool from "@/components/tools/UnlockPdfTool";
+import WatermarkPdfTool from "@/components/tools/WatermarkPdfTool";
 
 type ToolConfig = {
   title: string;
@@ -175,16 +183,66 @@ const toolMap: Record<string, ToolConfig> = {
     title: "Watermark Image",
     description: "Stamp text or logos on images.",
     component: (
-      <StudioScaffoldTool
+      <ImageProcessTool
         title="Watermark Image"
         eyebrow="Source Images"
-        description="Apply watermarks across image sets."
+        description="Apply watermark text across image sets."
         accept="image/*"
         multiple
-        primaryActionLabel="Add Watermark"
-        helperNotes={["Control opacity and position.", "Batch processing supported."]}
+        operation="watermark"
+        outputExtension="png"
+        outputMime="image/png"
+        fields={[
+          { name: "text", label: "Watermark text", type: "text", defaultValue: "Convertix" },
+          {
+            name: "position",
+            label: "Position",
+            type: "select",
+            options: [
+              { label: "Bottom Right", value: "bottom-right" },
+              { label: "Bottom Left", value: "bottom-left" },
+              { label: "Top Right", value: "top-right" },
+              { label: "Top Left", value: "top-left" },
+              { label: "Center", value: "center" }
+            ],
+            defaultValue: "bottom-right"
+          },
+          { name: "opacity", label: "Opacity (0-1)", type: "number", defaultValue: "0.35" },
+          { name: "scale", label: "Scale (0.05-0.4)", type: "number", defaultValue: "0.12" }
+        ]}
+        helperNotes={["Text-only watermark for now.", "Batch processing supported."]}
       />
     )
+  },
+  "remove-pages": {
+    title: "Remove Pages",
+    description: "Delete selected pages from a PDF.",
+    component: <RemovePagesTool />
+  },
+  "extract-pages": {
+    title: "Extract Pages",
+    description: "Export selected pages into a new PDF.",
+    component: <ExtractPagesTool />
+  },
+  "rotate-pdf": {
+    title: "Rotate PDF",
+    description: "Rotate pages for correct orientation.",
+    component: <RotatePdfTool />
+  },
+  "add-page-numbers": {
+    title: "Add Page Numbers",
+    description: "Insert page numbers into a PDF.",
+    component: <PageNumbersTool />
+  },
+  "add-watermark": {
+    title: "Add Watermark",
+    description: "Stamp watermarks across pages.",
+    component: <WatermarkPdfTool />
+  },
+  "repair-pdf": {
+    title: "Repair PDF",
+    description: "Fix broken PDFs and recover structure.",
+    component: <RepairPdfTool />
   },
   "image-meme": {
     title: "Meme Generator",
@@ -266,6 +324,8 @@ const toolMap: Record<string, ToolConfig> = {
         description="Upload a PDF and create PPTX slides with consistent layout."
         accept="application/pdf"
         primaryActionLabel="Convert to PPTX"
+        endpoint="/api/pdf/pdf-to-ppt"
+        outputName="converted.pptx"
         helperNotes={["Layouts preserve text and imagery where possible.", "PowerPoint export will retain page order."]}
       />
     )
@@ -280,6 +340,8 @@ const toolMap: Record<string, ToolConfig> = {
         description="Upload a PDF and extract table data into XLSX."
         accept="application/pdf"
         primaryActionLabel="Convert to XLSX"
+        endpoint="/api/pdf/pdf-to-excel"
+        outputName="converted.xlsx"
         helperNotes={["Table detection works best on clean, vector PDFs.", "Exports preserve column alignment when possible."]}
       />
     )
@@ -288,11 +350,12 @@ const toolMap: Record<string, ToolConfig> = {
     title: "Word to PDF",
     description: "Convert DOC/DOCX into a PDF.",
     component: (
-      <StudioScaffoldTool
+      <OfficeToPdfTool
         title="Word to PDF"
         eyebrow="Source DOCX"
         description="Upload a Word document to generate a polished PDF."
         accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        endpoint="/api/pdf/word-to-pdf"
         primaryActionLabel="Convert to PDF"
         helperNotes={["Fonts and layout are preserved where available.", "Great for sharing and approvals."]}
       />
@@ -302,11 +365,12 @@ const toolMap: Record<string, ToolConfig> = {
     title: "PowerPoint to PDF",
     description: "Export slides into PDF.",
     component: (
-      <StudioScaffoldTool
+      <OfficeToPdfTool
         title="PowerPoint to PDF"
         eyebrow="Source PPTX"
         description="Upload a PowerPoint to export a ready-to-share PDF."
         accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        endpoint="/api/pdf/ppt-to-pdf"
         primaryActionLabel="Convert to PDF"
         helperNotes={["Slide order is preserved.", "Export is ideal for read-only sharing."]}
       />
@@ -316,11 +380,12 @@ const toolMap: Record<string, ToolConfig> = {
     title: "Excel to PDF",
     description: "Convert XLS/XLSX into PDF.",
     component: (
-      <StudioScaffoldTool
+      <OfficeToPdfTool
         title="Excel to PDF"
         eyebrow="Source Spreadsheet"
         description="Upload a spreadsheet to render a clean PDF."
         accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        endpoint="/api/pdf/excel-to-pdf"
         primaryActionLabel="Convert to PDF"
         helperNotes={["Export keeps rows and columns aligned.", "Great for reports and read-only distribution."]}
       />
@@ -329,16 +394,7 @@ const toolMap: Record<string, ToolConfig> = {
   "html-to-pdf": {
     title: "HTML to PDF",
     description: "Convert web pages into PDF.",
-    component: (
-      <StudioScaffoldTool
-        title="HTML to PDF"
-        eyebrow="Source URL"
-        description="Provide a URL to render into a PDF."
-        accept="text/plain"
-        primaryActionLabel="Convert to PDF"
-        helperNotes={["Best for static pages.", "CSS print styles are respected when available."]}
-      />
-    )
+    component: <HtmlToPdfTool />
   },
   "merge-pdf": {
     title: "Merge PDF",
@@ -353,30 +409,12 @@ const toolMap: Record<string, ToolConfig> = {
   "remove-pages": {
     title: "Remove Pages",
     description: "Delete pages from a PDF.",
-    component: (
-      <StudioScaffoldTool
-        title="Remove Pages"
-        eyebrow="Source PDF"
-        description="Upload a PDF and remove selected pages."
-        accept="application/pdf"
-        primaryActionLabel="Remove Pages"
-        helperNotes={["Use comma-separated pages or ranges.", "Example: 1,3,5-7"]}
-      />
-    )
+    component: <RemovePagesTool />
   },
   "extract-pages": {
     title: "Extract Pages",
     description: "Export selected pages into a new PDF.",
-    component: (
-      <StudioScaffoldTool
-        title="Extract Pages"
-        eyebrow="Source PDF"
-        description="Extract selected pages into a new document."
-        accept="application/pdf"
-        primaryActionLabel="Extract Pages"
-        helperNotes={["Use comma-separated pages or ranges.", "Example: 2,4,8-10"]}
-      />
-    )
+    component: <ExtractPagesTool />
   },
   "compress-pdf": {
     title: "Compress PDF",
@@ -386,16 +424,7 @@ const toolMap: Record<string, ToolConfig> = {
   "repair-pdf": {
     title: "Repair PDF",
     description: "Fix broken PDFs and recover structure.",
-    component: (
-      <StudioScaffoldTool
-        title="Repair PDF"
-        eyebrow="Source PDF"
-        description="Upload a PDF and run automated repair routines."
-        accept="application/pdf"
-        primaryActionLabel="Repair PDF"
-        helperNotes={["Best for PDFs that fail to open or render.", "Repair preserves visible content where possible."]}
-      />
-    )
+    component: <RepairPdfTool />
   },
   "protect-pdf": {
     title: "Protect PDF",
@@ -415,44 +444,17 @@ const toolMap: Record<string, ToolConfig> = {
   "rotate-pdf": {
     title: "Rotate PDF",
     description: "Rotate pages for correct orientation.",
-    component: (
-      <StudioScaffoldTool
-        title="Rotate PDF"
-        eyebrow="Source PDF"
-        description="Rotate selected pages by 90/180/270 degrees."
-        accept="application/pdf"
-        primaryActionLabel="Rotate PDF"
-        helperNotes={["Rotate by page range or all pages.", "Keeps content crisp and aligned."]}
-      />
-    )
+    component: <RotatePdfTool />
   },
   "add-page-numbers": {
     title: "Add Page Numbers",
     description: "Insert page numbers into a PDF.",
-    component: (
-      <StudioScaffoldTool
-        title="Add Page Numbers"
-        eyebrow="Source PDF"
-        description="Apply page numbers with style and alignment."
-        accept="application/pdf"
-        primaryActionLabel="Add Numbers"
-        helperNotes={["Supports header/footer placement.", "Choose fonts and offsets."]}
-      />
-    )
+    component: <PageNumbersTool />
   },
   "add-watermark": {
     title: "Add Watermark",
     description: "Stamp watermarks across pages.",
-    component: (
-      <StudioScaffoldTool
-        title="Add Watermark"
-        eyebrow="Source PDF"
-        description="Add text or image watermarks to pages."
-        accept="application/pdf"
-        primaryActionLabel="Add Watermark"
-        helperNotes={["Control opacity and rotation.", "Apply to all or selected pages."]}
-      />
-    )
+    component: <WatermarkPdfTool />
   },
   "crop-pdf": {
     title: "Crop PDF",
@@ -474,6 +476,8 @@ const toolMap: Record<string, ToolConfig> = {
         description="Apply redactions to remove sensitive information."
         accept="application/pdf"
         primaryActionLabel="Redact PDF"
+        endpoint="/api/pdf/redact"
+        outputName="redacted.pdf"
         helperNotes={["Redactions are permanent.", "Use for compliance and privacy."]}
       />
     )
@@ -489,7 +493,26 @@ const toolMap: Record<string, ToolConfig> = {
         accept="application/pdf"
         multiple
         primaryActionLabel="Compare PDFs"
+        endpoint="/api/pdf/compare"
+        fileFieldName="files"
+        outputName="comparison.pdf"
         helperNotes={["Highlights text and layout changes.", "Best for review workflows."]}
+      />
+    )
+  },
+  "flatten-pdf": {
+    title: "Flatten PDF",
+    description: "Lock annotations into the document.",
+    component: (
+      <StudioScaffoldTool
+        title="Flatten PDF"
+        eyebrow="Source PDF"
+        description="Flatten form fields and annotations into the PDF."
+        accept="application/pdf"
+        primaryActionLabel="Flatten PDF"
+        endpoint="/api/pdf/flatten"
+        outputName="flattened.pdf"
+        helperNotes={["Great for approvals and archiving.", "Ensures annotations cannot be edited."]}
       />
     )
   },
@@ -503,6 +526,8 @@ const toolMap: Record<string, ToolConfig> = {
         description="Prepare PDF/A compliant files for long-term storage."
         accept="application/pdf"
         primaryActionLabel="Convert to PDF/A"
+        endpoint="/api/pdf/pdf-to-pdfa"
+        outputName="archive.pdf"
         helperNotes={["Outputs are optimized for compliance and archiving.", "Best for legal and institutional storage."]}
       />
     )
@@ -518,6 +543,9 @@ const toolMap: Record<string, ToolConfig> = {
         accept="image/*"
         multiple
         primaryActionLabel="Create PDF"
+        endpoint="/api/pdf/scan-to-pdf"
+        fileFieldName="files"
+        outputName="scanned.pdf"
         helperNotes={["Auto ordering preserves the upload sequence.", "Output is optimized for quick sharing."]}
       />
     )
@@ -532,6 +560,8 @@ const toolMap: Record<string, ToolConfig> = {
         description="Make scanned PDFs searchable with OCR text layers."
         accept="application/pdf"
         primaryActionLabel="Run OCR"
+        endpoint="/api/pdf/ocr"
+        outputName="ocr.pdf"
         helperNotes={["Detects text in scanned documents.", "Outputs searchable and selectable PDFs."]}
       />
     )

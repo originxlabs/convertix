@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace PdfEditor.Api.Controllers;
@@ -13,6 +14,16 @@ public class DocExchangeController : ControllerBase
     }
 
     public sealed class PdfToPagesRequest
+    {
+        public IFormFile? File { get; set; }
+    }
+
+    public sealed class PdfToOfficeRequest
+    {
+        public IFormFile? File { get; set; }
+    }
+
+    public sealed class OfficeToPdfRequest
     {
         public IFormFile? File { get; set; }
     }
@@ -95,6 +106,31 @@ public class DocExchangeController : ControllerBase
         return File(bytes, "application/vnd.apple.pages", "converted.pages");
     }
 
+    [HttpPost("word-to-pdf")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> WordToPdf([FromForm] OfficeToPdfRequest request)
+        => await ConvertOfficeToPdf(request.File, ".docx");
+
+    [HttpPost("ppt-to-pdf")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> PptToPdf([FromForm] OfficeToPdfRequest request)
+        => await ConvertOfficeToPdf(request.File, ".pptx");
+
+    [HttpPost("excel-to-pdf")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> ExcelToPdf([FromForm] OfficeToPdfRequest request)
+        => await ConvertOfficeToPdf(request.File, ".xlsx");
+
+    [HttpPost("pdf-to-ppt")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> PdfToPpt([FromForm] PdfToOfficeRequest request)
+        => await ConvertPdfToOffice(request.File, "pptx", ".pptx");
+
+    [HttpPost("pdf-to-excel")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> PdfToExcel([FromForm] PdfToOfficeRequest request)
+        => await ConvertPdfToOffice(request.File, "xlsx", ".xlsx");
+
     private static string CreateWorkDir()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), "pdf-editor");
@@ -117,6 +153,153 @@ public class DocExchangeController : ControllerBase
         await using var stream = System.IO.File.OpenWrite(filePath);
         await file.CopyToAsync(stream);
         return filePath;
+    }
+
+    private static string? ResolveOfficeBinary()
+    {
+        if (CheckBinary("soffice"))
+        {
+            return "soffice";
+        }
+        if (CheckBinary("libreoffice"))
+        {
+            return "libreoffice";
+        }
+        if (OperatingSystem.IsMacOS())
+        {
+            var macPath = "/Applications/LibreOffice.app/Contents/MacOS/soffice";
+            if (System.IO.File.Exists(macPath))
+            {
+                return macPath;
+            }
+        }
+        return null;
+    }
+
+    private static bool CheckBinary(string name)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = name,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            startInfo.ArgumentList.Add("--version");
+            using var process = Process.Start(startInfo);
+            if (process is null) return false;
+            process.WaitForExit(3000);
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<IActionResult> ConvertOfficeToPdf(IFormFile? file, string fallbackExtension)
+    {
+        if (file is null)
+        {
+            return BadRequest("Missing file.");
+        }
+
+        var officeBinary = ResolveOfficeBinary();
+        if (officeBinary is null)
+        {
+            return StatusCode(StatusCodes.Status501NotImplemented,
+                "LibreOffice (soffice) is not available on this server.");
+        }
+
+        var workDir = CreateWorkDir();
+        var extension = Path.GetExtension(file.FileName);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = fallbackExtension;
+        }
+        var inputPath = await SaveFormFile(file, workDir, extension);
+
+        var args = new[]
+        {
+            "--headless",
+            "--nologo",
+            "--nofirststartwizard",
+            "--convert-to",
+            "pdf",
+            "--outdir",
+            workDir,
+            inputPath
+        };
+
+        var result = RunProcess(officeBinary, args, workDir, out var error);
+        if (!result)
+        {
+            return Problem($"LibreOffice failed: {error}");
+        }
+
+        var outputPath = Path.Combine(
+            workDir,
+            $"{Path.GetFileNameWithoutExtension(inputPath)}.pdf"
+        );
+        if (!System.IO.File.Exists(outputPath))
+        {
+            return Problem("LibreOffice output PDF was not created.");
+        }
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(outputPath);
+        return File(bytes, "application/pdf", "converted.pdf");
+    }
+
+    private async Task<IActionResult> ConvertPdfToOffice(IFormFile? file, string format, string outputExtension)
+    {
+        if (file is null)
+        {
+            return BadRequest("Missing PDF.");
+        }
+
+        var officeBinary = ResolveOfficeBinary();
+        if (officeBinary is null)
+        {
+            return StatusCode(StatusCodes.Status501NotImplemented,
+                "LibreOffice (soffice) is not available on this server.");
+        }
+
+        var workDir = CreateWorkDir();
+        var inputPath = await SaveFormFile(file, workDir, ".pdf");
+
+        var args = new[]
+        {
+            "--headless",
+            "--nologo",
+            "--nofirststartwizard",
+            "--convert-to",
+            format,
+            "--outdir",
+            workDir,
+            inputPath
+        };
+
+        var result = RunProcess(officeBinary, args, workDir, out var error);
+        if (!result)
+        {
+            return Problem($"LibreOffice failed: {error}");
+        }
+
+        var outputPath = Path.Combine(workDir, $"{Path.GetFileNameWithoutExtension(inputPath)}.{format}");
+        if (!System.IO.File.Exists(outputPath))
+        {
+            return Problem("LibreOffice output file was not created.");
+        }
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(outputPath);
+        var contentType = format switch
+        {
+            "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            _ => "application/octet-stream"
+        };
+        return File(bytes, contentType, $"converted{outputExtension}");
     }
 
     private static bool RunProcess(string fileName, string[] args, string workDir, out string error)

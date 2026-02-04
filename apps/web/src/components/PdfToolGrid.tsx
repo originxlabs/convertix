@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import ToolCard from "@/components/ToolCard";
 import type { ToolIconName } from "@/components/ToolIcon";
+import { getApiBase } from "@/lib/apiBase";
 
 type Category = "all" | "convert" | "optimize" | "security" | "edit";
 
@@ -21,6 +22,7 @@ const tools: Array<{
   href: string;
   category: Category[];
   badge?: string;
+  healthKey?: Array<"libreoffice" | "playwright" | "pandoc" | "pdftotext" | "pdfcpu" | "ocrmypdf">;
   icon: ToolIconName;
 }> = [
   {
@@ -29,6 +31,7 @@ const tools: Array<{
     href: "/tools/edit-pdf",
     category: ["edit"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "edit"
   },
   {
@@ -37,6 +40,7 @@ const tools: Array<{
     href: "/tools/merge-pdf",
     category: ["convert"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "merge"
   },
   {
@@ -45,6 +49,7 @@ const tools: Array<{
     href: "/tools/split-pdf",
     category: ["convert"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "split"
   },
   {
@@ -52,7 +57,8 @@ const tools: Array<{
     description: "Delete pages from a PDF.",
     href: "/tools/remove-pages",
     category: ["edit"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "organize"
   },
   {
@@ -60,7 +66,8 @@ const tools: Array<{
     description: "Export selected pages into a new PDF.",
     href: "/tools/extract-pages",
     category: ["edit"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "organize"
   },
   {
@@ -69,6 +76,7 @@ const tools: Array<{
     href: "/tools/compress-pdf",
     category: ["optimize"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "compress"
   },
   {
@@ -76,7 +84,8 @@ const tools: Array<{
     description: "Fix broken PDFs and recover structure.",
     href: "/tools/repair-pdf",
     category: ["optimize"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "compress"
   },
   {
@@ -85,6 +94,7 @@ const tools: Array<{
     href: "/tools/pdf-to-word",
     category: ["convert"],
     badge: "Live",
+    healthKey: ["pandoc", "pdftotext"],
     icon: "pdf-to-word"
   },
   {
@@ -92,7 +102,7 @@ const tools: Array<{
     description: "Convert PDFs into Apple Pages files (macOS only).",
     href: "/tools/pdf-to-pages",
     category: ["convert"],
-    badge: "Mac",
+    badge: "Live",
     icon: "pdf-to-word"
   },
   {
@@ -100,6 +110,8 @@ const tools: Array<{
     description: "Convert slides into PPTX.",
     href: "/tools/pdf-to-ppt",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["libreoffice"],
     icon: "pdf-to-ppt"
   },
   {
@@ -107,6 +119,8 @@ const tools: Array<{
     description: "Extract tables into spreadsheets.",
     href: "/tools/pdf-to-excel",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["libreoffice"],
     icon: "pdf-to-excel"
   },
   {
@@ -114,6 +128,8 @@ const tools: Array<{
     description: "Convert DOC/DOCX into a PDF.",
     href: "/tools/word-to-pdf",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["libreoffice"],
     icon: "word-to-pdf"
   },
   {
@@ -121,6 +137,8 @@ const tools: Array<{
     description: "Export PPT/PPTX into PDF.",
     href: "/tools/ppt-to-pdf",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["libreoffice"],
     icon: "ppt-to-pdf"
   },
   {
@@ -128,6 +146,8 @@ const tools: Array<{
     description: "Convert XLS/XLSX into PDF.",
     href: "/tools/excel-to-pdf",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["libreoffice"],
     icon: "excel-to-pdf"
   },
   {
@@ -135,7 +155,8 @@ const tools: Array<{
     description: "Convert web pages into PDF.",
     href: "/tools/html-to-pdf",
     category: ["convert"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["playwright"],
     icon: "word-to-pdf"
   },
   {
@@ -152,6 +173,7 @@ const tools: Array<{
     href: "/tools/image-to-pdf",
     category: ["convert"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "jpg-to-pdf"
   },
   {
@@ -160,6 +182,7 @@ const tools: Array<{
     href: "/tools/unlock-pdf",
     category: ["security"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "unlock"
   },
   {
@@ -168,6 +191,7 @@ const tools: Array<{
     href: "/tools/protect-pdf",
     category: ["security"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "protect"
   },
   {
@@ -176,6 +200,7 @@ const tools: Array<{
     href: "/tools/organize-pdf",
     category: ["edit"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "organize"
   },
   {
@@ -183,7 +208,8 @@ const tools: Array<{
     description: "Rotate pages for correct orientation.",
     href: "/tools/rotate-pdf",
     category: ["edit"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "organize"
   },
   {
@@ -191,7 +217,8 @@ const tools: Array<{
     description: "Insert page numbers into a PDF.",
     href: "/tools/add-page-numbers",
     category: ["edit"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "edit"
   },
   {
@@ -199,7 +226,8 @@ const tools: Array<{
     description: "Stamp watermarks across pages.",
     href: "/tools/add-watermark",
     category: ["edit"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "edit"
   },
   {
@@ -208,6 +236,7 @@ const tools: Array<{
     href: "/tools/sign-pdf",
     category: ["edit"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "sign"
   },
   {
@@ -216,6 +245,7 @@ const tools: Array<{
     href: "/tools/crop-pdf",
     category: ["edit"],
     badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "crop"
   },
   {
@@ -223,7 +253,8 @@ const tools: Array<{
     description: "Permanently remove sensitive content.",
     href: "/tools/redact-pdf",
     category: ["security"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "protect"
   },
   {
@@ -231,7 +262,8 @@ const tools: Array<{
     description: "Diff two PDFs for changes.",
     href: "/tools/compare-pdf",
     category: ["security"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "protect"
   },
   {
@@ -239,7 +271,8 @@ const tools: Array<{
     description: "Lock annotations into the document.",
     href: "/tools/flatten-pdf",
     category: ["security"],
-    badge: "Coming",
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "protect"
   },
   {
@@ -247,6 +280,8 @@ const tools: Array<{
     description: "Archive-ready PDF/A conversion.",
     href: "/tools/pdf-to-pdfa",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["ocrmypdf"],
     icon: "pdf-to-pdfa"
   },
   {
@@ -254,6 +289,8 @@ const tools: Array<{
     description: "Turn scans into clean PDFs.",
     href: "/tools/scan-to-pdf",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["pdfcpu"],
     icon: "scan"
   },
   {
@@ -261,12 +298,30 @@ const tools: Array<{
     description: "Make PDFs searchable.",
     href: "/tools/ocr-pdf",
     category: ["convert"],
+    badge: "Live",
+    healthKey: ["ocrmypdf"],
     icon: "ocr"
   }
 ];
 
 export default function PdfToolGrid() {
   const [active, setActive] = useState<Category>("all");
+  const [health, setHealth] = useState<Record<string, boolean> | null>(null);
+  const apiBase = useMemo(() => getApiBase(), []);
+
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        const response = await fetch(`${apiBase}/health/tools`);
+        if (!response.ok) return;
+        const json = (await response.json()) as Record<string, boolean>;
+        setHealth(json);
+      } catch {
+        setHealth(null);
+      }
+    };
+    fetchHealth();
+  }, [apiBase]);
 
   const visible = useMemo(() => {
     if (active === "all") return tools;
@@ -275,6 +330,23 @@ export default function PdfToolGrid() {
 
   return (
     <div>
+      {health && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-obsidian-500">
+          <span className="text-[11px] uppercase tracking-[0.2em] text-obsidian-500">Tool Health</span>
+          <span className={`tool-badge ${health.libreoffice ? "tool-badge--live" : "tool-badge--muted"}`}>
+            {health.libreoffice && <span className="tool-badge__dot" />}
+            LibreOffice
+          </span>
+          <span className={`tool-badge ${health.playwright ? "tool-badge--live" : "tool-badge--muted"}`}>
+            {health.playwright && <span className="tool-badge__dot" />}
+            Playwright
+          </span>
+          <span className={`tool-badge ${health.pandoc && health.pdftotext ? "tool-badge--live" : "tool-badge--muted"}`}>
+            {health.pandoc && health.pdftotext && <span className="tool-badge__dot" />}
+            PDF to Word
+          </span>
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap gap-2">
         {filters.map((filter) => (
           <button
@@ -290,9 +362,14 @@ export default function PdfToolGrid() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {visible.map((tool) => (
-          <ToolCard key={tool.href} {...tool} />
-        ))}
+        {visible.map((tool) => {
+          let badge = tool.badge;
+          if (tool.healthKey && health) {
+            const ok = tool.healthKey.every((key) => Boolean(health[key]));
+            badge = ok ? "Live" : "Coming";
+          }
+          return <ToolCard key={tool.href} {...tool} badge={badge} />;
+        })}
       </div>
     </div>
   );

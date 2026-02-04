@@ -4,84 +4,49 @@ import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { applyAuthHeader } from "@/lib/auth";
-import { saveHistoryItem } from "@/lib/historyStore";
 import { getApiBase } from "@/lib/apiBase";
+import { saveHistoryItem } from "@/lib/historyStore";
 
-type Field = {
-  name: string;
-  label: string;
-  type: "text" | "number";
-  placeholder?: string;
-};
-
-type ImageAiToolProps = {
+type OfficeToPdfToolProps = {
   title: string;
   eyebrow: string;
   description: string;
   accept: string;
   endpoint: string;
-  outputExtension: string;
-  outputMime: string;
-  helperNotes?: string[];
-  fields?: Field[];
+  primaryActionLabel: string;
+  helperNotes: string[];
 };
 
-export default function ImageAiTool({
+export default function OfficeToPdfTool({
   title,
   eyebrow,
   description,
   accept,
   endpoint,
-  outputExtension,
-  outputMime,
-  helperNotes = [],
-  fields = []
-}: ImageAiToolProps) {
+  primaryActionLabel,
+  helperNotes
+}: OfficeToPdfToolProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [fieldState, setFieldState] = useState<Record<string, string>>(
-    fields.reduce((acc, field) => {
-      acc[field.name] = "";
-      return acc;
-    }, {} as Record<string, string>)
-  );
-
-  const apiBase = useMemo(() => getApiBase(), []);
-  const tier = useMemo(
-    () => (process.env.NEXT_PUBLIC_TIER ?? "free").toLowerCase(),
-    []
-  );
-  const isPro = tier === "pro" || tier === "enterprise";
 
   const MAX_BYTES = 200 * 1024 * 1024;
+  const apiBase = useMemo(() => getApiBase(), []);
 
   const handlePick = () => fileInputRef.current?.click();
 
-  const handleFiles = (selected: FileList | null) => {
-    if (!selected?.length) return;
-    const next = selected[0];
-    if (next.size > MAX_BYTES) {
-      setStatus("File exceeds the 200 MB limit.");
+  const handleConvert = async () => {
+    if (!file) return;
+    if (file.size > MAX_BYTES) {
+      setStatus("File is too large (max 200 MB).");
       return;
     }
-    setFile(next);
-    setStatus(null);
-  };
-
-  const handleAction = async () => {
-    if (!file || !isPro) return;
-    setStatus("Processing...");
+    setStatus("Converting to PDF...");
     setProgress(0);
-
     const formData = new FormData();
     formData.append("file", file);
-    Object.entries(fieldState).forEach(([key, value]) => {
-      if (value) formData.append(key, value);
-    });
-
     const blob = await new Promise<Blob | null>((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${apiBase}${endpoint}`);
@@ -93,7 +58,7 @@ export default function ImageAiTool({
       };
       xhr.onload = () => {
         if (xhr.status < 200 || xhr.status >= 300) {
-          const message = xhr.responseText || "Processing failed.";
+          const message = xhr.responseText || "Conversion failed.";
           setStatus(message);
           resolve(null);
           return;
@@ -101,25 +66,23 @@ export default function ImageAiTool({
         resolve(xhr.response);
       };
       xhr.onerror = () => {
-        setStatus("Processing failed.");
+        setStatus("Conversion failed.");
         resolve(null);
       };
       xhr.send(formData);
     });
-
     if (!blob) return;
-
     await saveHistoryItem({
-      name: `${file.name.replace(/\.[^.]+$/, "")}-${title.replace(/\s+/g, "-").toLowerCase()}`,
+      name: `${title.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}`,
       blob,
-      kind: "image"
+      kind: "pdf"
     });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `${file.name.replace(/\.[^.]+$/, "")}.${outputExtension}`;
+    link.download = "converted.pdf";
     link.click();
     URL.revokeObjectURL(link.href);
-    setStatus("Completed.");
+    setStatus("PDF downloaded.");
     setTimeout(() => setStatus(null), 2500);
   };
 
@@ -134,7 +97,7 @@ export default function ImageAiTool({
             <h3 className="mt-2 text-lg font-semibold text-ink-950">{title}</h3>
             <p className="mt-2 text-sm text-obsidian-500">{description}</p>
           </div>
-          <Button variant="premium" size="sm" onClick={handlePick} disabled={!isPro}>
+          <Button variant="secondary" size="sm" onClick={handlePick}>
             Upload file
           </Button>
         </div>
@@ -143,7 +106,7 @@ export default function ImageAiTool({
           type="file"
           accept={accept}
           className="hidden"
-          onChange={(event) => handleFiles(event.target.files)}
+          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
         <div
           className={`mt-6 rounded-2xl border border-dashed p-6 text-sm text-obsidian-500 transition ${
@@ -159,29 +122,11 @@ export default function ImageAiTool({
           onDrop={(event) => {
             event.preventDefault();
             setIsDragging(false);
-            handleFiles(event.dataTransfer.files);
+            setFile(event.dataTransfer.files?.[0] ?? null);
           }}
         >
-          {file ? `${file.name} selected.` : "Upload a file to prepare the AI workflow."}
+          {file ? `${file.name} ready for conversion.` : "Upload a file to convert to PDF."}
         </div>
-        {fields.length > 0 && (
-          <div className="mt-6 grid gap-4 text-sm text-ink-900">
-            {fields.map((field) => (
-              <label key={field.name} className="flex flex-col gap-2">
-                {field.label}
-                <input
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  value={fieldState[field.name] ?? ""}
-                  onChange={(event) =>
-                    setFieldState((prev) => ({ ...prev, [field.name]: event.target.value }))
-                  }
-                  className="rounded-xl border border-obsidian-200 bg-white px-3 py-2"
-                />
-              </label>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="glass-card rounded-2xl p-6">
@@ -192,13 +137,8 @@ export default function ImageAiTool({
               {note}
             </div>
           ))}
-          {!isPro && (
-            <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-              Available on Pro and Enterprise tiers.
-            </div>
-          )}
-          <Button variant="premium" onClick={handleAction} disabled={!file || !isPro}>
-            Process
+          <Button variant="premium" onClick={handleConvert} disabled={!file}>
+            {primaryActionLabel}
           </Button>
           {progress > 0 && progress < 100 && (
             <div className="h-2 w-full overflow-hidden rounded-full bg-obsidian-200">

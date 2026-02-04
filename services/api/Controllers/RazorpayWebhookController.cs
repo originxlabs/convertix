@@ -42,21 +42,40 @@ public sealed class RazorpayWebhookController : ControllerBase
         }
 
         var eventType = payload.GetProperty("event").GetString() ?? string.Empty;
-        if (eventType != "payment.captured")
+        if (eventType != "payment.captured" && eventType != "invoice.paid" && eventType != "subscription.activated")
         {
             return Ok(new { status = "ignored" });
         }
 
         var payment = payload.GetProperty("payload").GetProperty("payment").GetProperty("entity");
-        var email = payment.GetProperty("email").GetString() ?? string.Empty;
-        var tier = payment.GetProperty("notes").GetProperty("tier").GetString() ?? "pro";
-        var orgId = payment.GetProperty("notes").TryGetProperty("org_id", out var orgProp) ? orgProp.GetString() : null;
+        var email = payment.TryGetProperty("email", out var emailProp) ? emailProp.GetString() ?? string.Empty : string.Empty;
+        var notes = payment.TryGetProperty("notes", out var notesProp) ? notesProp : default;
+        var tier = notes.ValueKind != JsonValueKind.Undefined && notes.TryGetProperty("tier", out var tierProp)
+            ? tierProp.GetString() ?? "pro"
+            : "pro";
+        var userId = notes.ValueKind != JsonValueKind.Undefined && notes.TryGetProperty("user_id", out var userProp)
+            ? userProp.GetString()
+            : null;
+        var orgId = notes.ValueKind != JsonValueKind.Undefined && notes.TryGetProperty("org_id", out var orgProp)
+            ? orgProp.GetString()
+            : null;
+        var cycle = notes.ValueKind != JsonValueKind.Undefined && notes.TryGetProperty("billing_cycle", out var cycleProp)
+            ? cycleProp.GetString()
+            : "monthly";
 
-        var activationKey = await _store.CreateActivationKeyAsync(tier, null, orgId, graceDays: 7);
+        DateTime? expiresAt = cycle == "yearly" ? DateTime.UtcNow.AddYears(1) : DateTime.UtcNow.AddMonths(1);
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            await _store.UpsertUserEntitlementAsync(userId, tier, expiresAt, orgId);
+        }
+
+        var activationKey = await _store.CreateActivationKeyAsync(tier, expiresAt, orgId, graceDays: 7);
         var invoiceId = $"INV-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid():N}".ToUpperInvariant();
-        var emailSent = await _email.SendActivationEmailAsync(email, activationKey, tier, invoiceId);
+        var emailSent = string.IsNullOrWhiteSpace(email)
+            ? false
+            : await _email.SendActivationEmailAsync(email, activationKey, tier, invoiceId);
 
-        return Ok(new { status = "ok", activationKeyGenerated = true, emailSent });
+        return Ok(new { status = "ok", activationKeyGenerated = true, emailSent, entitlementUpdated = !string.IsNullOrWhiteSpace(userId) });
     }
 
     private static bool VerifySignature(string payload, string secret, string signature)

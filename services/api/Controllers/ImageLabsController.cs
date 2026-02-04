@@ -1,5 +1,7 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
+using PdfEditor.Api.Services;
 
 namespace PdfEditor.Api.Controllers;
 
@@ -9,11 +11,13 @@ public class ImageLabsController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
+    private readonly BillingStore _billingStore;
 
-    public ImageLabsController(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public ImageLabsController(IHttpClientFactory httpClientFactory, IConfiguration configuration, BillingStore billingStore)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
+        _billingStore = billingStore;
     }
 
     private string ImageEngineBase => Environment.GetEnvironmentVariable("IMAGE_ENGINE_URL") ?? "http://localhost:5055/image-engine";
@@ -83,6 +87,7 @@ public class ImageLabsController : ControllerBase
 
         var bytes = await response.Content.ReadAsByteArrayAsync();
         var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        await TrackUsageAsync($"image:{request.Operation}");
         return File(bytes, contentType);
     }
 
@@ -128,6 +133,7 @@ public class ImageLabsController : ControllerBase
         }
         var bytes = await response.Content.ReadAsByteArrayAsync();
         var contentType = response.Content.Headers.ContentType?.ToString() ?? "image/png";
+        await TrackUsageAsync("image:html-to-image");
         return File(bytes, contentType);
     }
 
@@ -150,6 +156,45 @@ public class ImageLabsController : ControllerBase
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, "Image engine unavailable.");
         }
+    }
+
+    [HttpGet("health/tools")]
+    public async Task<IActionResult> ToolsHealth()
+    {
+        var engineOk = false;
+        var playwrightOk = false;
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetAsync($"{ImageEngineBase}/health");
+            engineOk = response.IsSuccessStatusCode;
+            var toolsResponse = await client.GetAsync($"{ImageEngineBase}/health/tools");
+            if (toolsResponse.IsSuccessStatusCode)
+            {
+                var json = await toolsResponse.Content.ReadFromJsonAsync<Dictionary<string, bool>>();
+                playwrightOk = json != null && json.TryGetValue("playwright", out var ok) && ok;
+            }
+        }
+        catch
+        {
+            engineOk = false;
+            playwrightOk = false;
+        }
+
+        var removeBg = IsProTier && !string.IsNullOrWhiteSpace(RemoveBgKey);
+        var upscale = IsProTier && !string.IsNullOrWhiteSpace(DeepAiKey);
+        var blurFace = IsProTier && !string.IsNullOrWhiteSpace(GoogleVisionKey);
+        var meme = IsProTier && !string.IsNullOrWhiteSpace(ImgflipUser) && !string.IsNullOrWhiteSpace(ImgflipPassword);
+
+        return Ok(new
+        {
+            engine = engineOk,
+            playwright = playwrightOk,
+            removebg = removeBg,
+            upscale,
+            blurface = blurFace,
+            meme
+        });
     }
 
     public sealed class HtmlToImageRequest
@@ -223,6 +268,19 @@ public class ImageLabsController : ControllerBase
 
         var bytes = await response.Content.ReadAsByteArrayAsync();
         var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        await TrackUsageAsync($"image:{operation}");
         return File(bytes, contentType);
+    }
+
+    private async Task TrackUsageAsync(string feature)
+    {
+        var userId = User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return;
+        }
+
+        var monthKey = DateTime.UtcNow.ToString("yyyy-MM");
+        await _billingStore.InsertUsageAsync(userId, feature, 1, monthKey);
     }
 }

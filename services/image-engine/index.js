@@ -7,6 +7,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { chromium } from "playwright";
+import { checkPlaywright } from "./health.js";
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -34,6 +35,11 @@ app.use(express.json({ limit: "50mb" }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+app.get("/health/tools", async (_req, res) => {
+  const playwrightOk = await checkPlaywright();
+  res.json({ playwright: playwrightOk });
 });
 
 app.post("/image/process", upload.single("file"), async (req, res) => {
@@ -115,6 +121,50 @@ app.post("/image/process", upload.single("file"), async (req, res) => {
         } else {
           return res.status(400).json({ error: "Unsupported format" });
         }
+        break;
+      }
+      case "watermark": {
+        const text = req.body.text || "Convertix";
+        const opacityRaw = Number(req.body.opacity ?? 0.35);
+        const opacity = Math.min(Math.max(opacityRaw, 0.05), 0.9);
+        const position = (req.body.position || "bottom-right").toLowerCase();
+        const scaleRaw = Number(req.body.scale ?? 0.12);
+        const scale = Math.min(Math.max(scaleRaw, 0.05), 0.4);
+
+        const img = sharp(buffer);
+        const meta = await img.metadata();
+        const width = meta.width ?? 1200;
+        const height = meta.height ?? 800;
+        const margin = Math.round(Math.min(width, height) * 0.05);
+        const fontSize = Math.max(14, Math.round(width * scale));
+
+        let x = width - margin;
+        let y = height - margin;
+        let anchor = "end";
+
+        if (position.includes("top")) y = margin + fontSize;
+        if (position.includes("left")) {
+          x = margin;
+          anchor = "start";
+        }
+        if (position === "center") {
+          x = Math.round(width / 2);
+          y = Math.round(height / 2);
+          anchor = "middle";
+        }
+
+        const svg = `
+<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .wm { font-family: Arial, sans-serif; font-size: ${fontSize}px; fill: rgba(255,255,255,${opacity}); }
+  </style>
+  <text x="${x}" y="${y}" text-anchor="${anchor}" class="wm">${text}</text>
+</svg>`;
+
+        outputBuffer = await img
+          .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
+          .toBuffer();
+        outputType = meta.format === "jpeg" ? "image/jpeg" : "image/png";
         break;
       }
       default:
@@ -303,6 +353,30 @@ app.post("/image/html-to-image", async (req, res) => {
     await browser.close();
 
     res.setHeader("Content-Type", format === "jpg" ? "image/jpeg" : "image/png");
+    res.send(buffer);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "HTML render failed";
+    res.status(500).json({ error: message });
+  }
+});
+
+app.post("/image/html-to-pdf", async (req, res) => {
+  const url = req.body?.url;
+  if (!url) {
+    return res.status(400).json({ error: "Missing url" });
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    return res.status(400).json({ error: "URL must start with http:// or https://" });
+  }
+
+  try {
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "networkidle" });
+    const buffer = await page.pdf({ format: "A4", printBackground: true });
+    await browser.close();
+
+    res.setHeader("Content-Type", "application/pdf");
     res.send(buffer);
   } catch (err) {
     const message = err instanceof Error ? err.message : "HTML render failed";

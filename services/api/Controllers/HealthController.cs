@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using System.Diagnostics;
+using System.Net.Http.Json;
 
 namespace PdfEditor.Api.Controllers;
 
@@ -8,10 +10,12 @@ namespace PdfEditor.Api.Controllers;
 public class HealthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public HealthController(IConfiguration configuration)
+    public HealthController(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
     }
 
     [HttpGet]
@@ -37,6 +41,65 @@ public class HealthController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, $"DB unavailable: {ex.Message}");
+        }
+    }
+
+    [HttpGet("tools")]
+    public async Task<IActionResult> Tools()
+    {
+        var libreOffice = CheckBinary("soffice") || CheckBinary("libreoffice");
+        var pdftotext = CheckBinary("pdftotext");
+        var pandoc = CheckBinary("pandoc");
+        var pdfcpu = CheckBinary("pdfcpu") || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PDFCPU_PATH"));
+        var ocrmypdf = CheckBinary("ocrmypdf");
+
+        var playwright = false;
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var imageEngineBase = Environment.GetEnvironmentVariable("IMAGE_ENGINE_URL") ?? "http://localhost:7071";
+            var response = await client.GetAsync($"{imageEngineBase}/health/tools");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadFromJsonAsync<Dictionary<string, bool>>();
+                playwright = json != null && json.TryGetValue("playwright", out var ok) && ok;
+            }
+        }
+        catch
+        {
+            playwright = false;
+        }
+
+        return Ok(new
+        {
+            libreoffice = libreOffice,
+            pdftotext,
+            pandoc,
+            pdfcpu,
+            playwright,
+            ocrmypdf
+        });
+    }
+
+    private static bool CheckBinary(string name)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = name,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            startInfo.ArgumentList.Add("--version");
+            using var process = Process.Start(startInfo);
+            if (process is null) return false;
+            process.WaitForExit(3000);
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

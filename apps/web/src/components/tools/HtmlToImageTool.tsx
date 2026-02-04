@@ -5,16 +5,14 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getAuthToken } from "@/lib/auth";
 import { saveHistoryItem } from "@/lib/historyStore";
+import { getApiBase } from "@/lib/apiBase";
 
 export default function HtmlToImageTool() {
   const [url, setUrl] = useState("");
   const [format, setFormat] = useState("png");
   const [status, setStatus] = useState<string | null>(null);
 
-  const apiBase = useMemo(
-    () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5055",
-    []
-  );
+  const apiBase = useMemo(() => getApiBase(), []);
 
   const handleConvert = async () => {
     if (!url.trim()) return;

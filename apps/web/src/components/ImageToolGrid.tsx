@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import ToolCard from "@/components/ToolCard";
 import type { ToolIconName } from "@/components/ToolIcon";
+import { getApiBase } from "@/lib/apiBase";
 
 type Category = "all" | "optimize" | "create" | "edit" | "convert" | "security";
 
@@ -22,6 +23,7 @@ const tools: Array<{
   href: string;
   category: Category[];
   badge?: string;
+  healthKey?: Array<"engine" | "playwright" | "removebg" | "upscale" | "blurface" | "meme">;
   icon: ToolIconName;
 }> = [
   {
@@ -30,6 +32,7 @@ const tools: Array<{
     href: "/tools/image-compress",
     category: ["optimize"],
     badge: "Live",
+    healthKey: ["engine"],
     icon: "compress"
   },
   {
@@ -46,6 +49,7 @@ const tools: Array<{
     href: "/tools/image-crop",
     category: ["edit"],
     badge: "Coming",
+    healthKey: ["engine"],
     icon: "crop"
   },
   {
@@ -54,6 +58,7 @@ const tools: Array<{
     href: "/tools/image-convert-to-jpg",
     category: ["convert"],
     badge: "Coming",
+    healthKey: ["engine"],
     icon: "img-convert-jpg"
   },
   {
@@ -62,6 +67,7 @@ const tools: Array<{
     href: "/tools/image-convert-from-jpg",
     category: ["convert"],
     badge: "Coming",
+    healthKey: ["engine"],
     icon: "img-convert-from-jpg"
   },
   {
@@ -78,6 +84,7 @@ const tools: Array<{
     href: "/tools/image-upscale",
     category: ["optimize"],
     badge: "Pro",
+    healthKey: ["engine", "upscale"],
     icon: "img-edit"
   },
   {
@@ -86,6 +93,7 @@ const tools: Array<{
     href: "/tools/image-remove-bg",
     category: ["edit"],
     badge: "Pro",
+    healthKey: ["engine", "removebg"],
     icon: "img-edit"
   },
   {
@@ -94,6 +102,7 @@ const tools: Array<{
     href: "/tools/image-watermark",
     category: ["security"],
     badge: "Coming",
+    healthKey: ["engine"],
     icon: "protect"
   },
   {
@@ -102,6 +111,7 @@ const tools: Array<{
     href: "/tools/image-meme",
     category: ["create"],
     badge: "Pro",
+    healthKey: ["engine", "meme"],
     icon: "img-edit"
   },
   {
@@ -110,6 +120,7 @@ const tools: Array<{
     href: "/tools/image-rotate",
     category: ["edit"],
     badge: "Coming",
+    healthKey: ["engine"],
     icon: "crop"
   },
   {
@@ -118,6 +129,7 @@ const tools: Array<{
     href: "/tools/html-to-image",
     category: ["convert"],
     badge: "New",
+    healthKey: ["engine", "playwright"],
     icon: "img-convert-jpg"
   },
   {
@@ -126,12 +138,29 @@ const tools: Array<{
     href: "/tools/image-blur-face",
     category: ["security"],
     badge: "Pro",
+    healthKey: ["engine", "blurface"],
     icon: "protect"
   }
 ];
 
 export default function ImageToolGrid() {
   const [active, setActive] = useState<Category>("all");
+  const [health, setHealth] = useState<Record<string, boolean> | null>(null);
+  const apiBase = useMemo(() => getApiBase(), []);
+
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        const response = await fetch(`${apiBase}/api/image/health/tools`);
+        if (!response.ok) return;
+        const json = (await response.json()) as Record<string, boolean>;
+        setHealth(json);
+      } catch {
+        setHealth(null);
+      }
+    };
+    fetchHealth();
+  }, [apiBase]);
 
   const visible = useMemo(() => {
     if (active === "all") return tools;
@@ -140,6 +169,23 @@ export default function ImageToolGrid() {
 
   return (
     <div>
+      {health && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-obsidian-500">
+          <span className="text-[11px] uppercase tracking-[0.2em] text-obsidian-500">Image Health</span>
+          <span className={`tool-badge ${health.engine ? "tool-badge--live" : "tool-badge--muted"}`}>
+            {health.engine && <span className="tool-badge__dot" />}
+            Image Engine
+          </span>
+          <span className={`tool-badge ${health.playwright ? "tool-badge--live" : "tool-badge--muted"}`}>
+            {health.playwright && <span className="tool-badge__dot" />}
+            Playwright
+          </span>
+          <span className={`tool-badge ${health.removebg && health.upscale && health.blurface ? "tool-badge--live" : "tool-badge--muted"}`}>
+            {health.removebg && health.upscale && health.blurface && <span className="tool-badge__dot" />}
+            AI Keys
+          </span>
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap gap-2">
         {filters.map((filter) => (
           <button
@@ -155,9 +201,14 @@ export default function ImageToolGrid() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {visible.map((tool) => (
-          <ToolCard key={tool.href} {...tool} />
-        ))}
+        {visible.map((tool) => {
+          let badge = tool.badge;
+          if (tool.healthKey && health) {
+            const ok = tool.healthKey.every((key) => Boolean(health[key]));
+            badge = ok ? "Live" : "Coming";
+          }
+          return <ToolCard key={tool.href} {...tool} badge={badge} />;
+        })}
       </div>
     </div>
   );

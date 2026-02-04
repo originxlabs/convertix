@@ -21,6 +21,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<PdfEditor.Api.Services.AnalyticsStore>();
 builder.Services.AddSingleton<PdfEditor.Api.Services.BillingStore>();
 builder.Services.AddSingleton<PdfEditor.Api.Services.EmailService>();
 builder.Services.AddSingleton<PdfEditor.Api.Services.UserStore>();
