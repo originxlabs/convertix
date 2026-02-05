@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import AppFooter from "@/components/AppFooter";
 import AppHeader from "@/components/AppHeader";
+import ToolHub from "@/components/ToolHub";
 import { getApiBase } from "@/lib/apiBase";
 
 type Tier = { tier: string; name: string; description: string };
@@ -127,76 +128,103 @@ export default function DashboardPage() {
       <AppHeader />
       <section className="dashboard-shell fade-in">
         <h1>Account dashboard</h1>
-        <p className="dashboard-subtitle">View plans, usage, credits, and entitlements.</p>
+        <p className="dashboard-subtitle">PDF Studio + Image Labs are ready. Manage plans, usage, and credits here.</p>
 
         {error && <div className="dashboard-error">{error}</div>}
         {loading && <div className="dashboard-card">Loading billing data…</div>}
 
         {!loading && (
-          <>
-            <div className="dashboard-grid">
+          <div className="dashboard-layout">
+            <aside className="dashboard-sidebar">
               <div className="dashboard-card">
-                <h3>Plan & Entitlement</h3>
-                <p>Current tier: {entitlement?.tier ?? "free"}</p>
-                <p>Expires: {entitlement?.expiresAt ?? "No expiry"}</p>
+                <h3>Workspace</h3>
+                <p>User ID: {userId ?? "—"}</p>
+                <p>Email: {email || "—"}</p>
+                <p>Tier: {entitlement?.tier ?? "free"}</p>
                 <p>Org: {entitlement?.orgId ?? "Personal"}</p>
               </div>
               <div className="dashboard-card">
-                <h3>Credits</h3>
-                <p>Balance: {credits ?? 0}</p>
-                <div className="dashboard-actions">
-                  <button onClick={() => requestCredits(50)}>Add 50 credits</button>
-                  <button onClick={() => requestCredits(120)}>Add 120 credits</button>
+                <h3>Studios</h3>
+                <div className="dashboard-studios">
+                  <div className="dashboard-studio">
+                    <strong>PDF Studio</strong>
+                    <p>Edit, annotate, sign, and export PDFs from one canvas.</p>
+                  </div>
+                  <div className="dashboard-studio">
+                    <strong>Image Labs</strong>
+                    <p>Resize, compress, convert, and enhance images instantly.</p>
+                  </div>
                 </div>
               </div>
+            </aside>
+
+            <div className="dashboard-main">
+              <ToolHub />
+
+              <div className="dashboard-grid">
+                <div className="dashboard-card">
+                  <h3>Plan & Entitlement</h3>
+                  <p>Current tier: {entitlement?.tier ?? "free"}</p>
+                  <p>Expires: {entitlement?.expiresAt ?? "No expiry"}</p>
+                  <p>Org: {entitlement?.orgId ?? "Personal"}</p>
+                </div>
+                <div className="dashboard-card">
+                  <h3>Credits</h3>
+                  <p>Balance: {credits ?? 0}</p>
+                  <div className="dashboard-actions">
+                    <button onClick={() => requestCredits(50)}>Add 50 credits</button>
+                    <button onClick={() => requestCredits(120)}>Add 120 credits</button>
+                  </div>
+                </div>
+                <div className="dashboard-card">
+                  <h3>Usage</h3>
+                  <div className="dashboard-usage">
+                    {Object.keys(usage).length === 0 && "No usage data yet."}
+                    {Object.entries(usage).map(([feature, count]) => (
+                      <div key={feature}>{feature}: {count}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="dashboard-card">
-                <h3>Usage</h3>
-                <div className="dashboard-usage">
-                  {Object.keys(usage).length === 0 && "No usage data yet."}
-                  {Object.entries(usage).map(([feature, count]) => (
-                    <div key={feature}>{feature}: {count}</div>
-                  ))}
+                <h3>Available tiers</h3>
+                <div className="dashboard-tiers">
+                  {tiers.map((tier) => {
+                    const price = pricing.find((p) => p.tier === tier.tier);
+                    return (
+                      <div key={tier.tier} className="dashboard-tier">
+                        <div>
+                          <strong>{tier.name}</strong>
+                          <p>{tier.description}</p>
+                        </div>
+                        <div>
+                          ₹{price?.priceMonthly ?? 0} / mo
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
 
-            <div className="dashboard-card">
-              <h3>Available tiers</h3>
-              <div className="dashboard-tiers">
-                {tiers.map((tier) => {
-                  const price = pricing.find((p) => p.tier === tier.tier);
-                  return (
-                    <div key={tier.tier} className="dashboard-tier">
-                      <div>
-                        <strong>{tier.name}</strong>
-                        <p>{tier.description}</p>
-                      </div>
-                      <div>
-                        ₹{price?.priceMonthly ?? 0} / mo
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {planSelection && (
-              <div className="dashboard-card dashboard-card--highlight">
-                <h3>Complete your plan upgrade</h3>
-                <p>Selected plan: {planSelection}</p>
-                <div className="dashboard-form">
-                  <input
-                    placeholder="Full name"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                  <input placeholder="Email" value={email} readOnly />
-                  <button onClick={startCheckout}>Proceed to Razorpay</button>
-                  {checkoutStatus && <div className="dashboard-subtitle">{checkoutStatus}</div>}
+              {planSelection && (
+                <div className="dashboard-card dashboard-card--highlight">
+                  <h3>Complete your plan upgrade</h3>
+                  <p>Selected plan: {planSelection}</p>
+                  <div className="dashboard-form">
+                    <input
+                      placeholder="Full name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                    />
+                    <input placeholder="Email" value={email} readOnly />
+                    <button onClick={startCheckout}>Proceed to Razorpay</button>
+                    {checkoutStatus && <div className="dashboard-subtitle">{checkoutStatus}</div>}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
+              )}
+            </div>
+          </div>
         )}
       </section>
       <AppFooter />

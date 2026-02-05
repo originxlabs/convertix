@@ -47,7 +47,7 @@ export default function AppFooter() {
   }, [apiBase]);
 
   return (
-    <footer className="border-t border-obsidian-200/70 bg-white/70 py-10 backdrop-blur-xl">
+    <footer className="app-footer border-t border-obsidian-200/70 bg-white/70 py-6 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-6 px-6 md:flex-row md:items-center md:px-10">
         <Link href="/" className="flex items-center gap-3">
           <div className="h-9 w-9 overflow-hidden rounded-2xl bg-ink-900/5">

@@ -81,32 +81,53 @@ export default function SignInPage() {
         })
       });
       const payload = await response.json().catch(() => ({}));
+
+      const finalizeAuth = async (authPayload: { userId?: string; token?: string }) => {
+        if (!authPayload?.userId) {
+          setError("Unable to sign in. Please try again.");
+          return;
+        }
+        setStatus("Signed in. Redirecting to dashboard…");
+        window.localStorage.setItem("convertix-user-id", authPayload.userId);
+        if (authPayload.token) {
+          window.localStorage.setItem("convertix-auth-token", authPayload.token);
+        }
+        try {
+          const sessionResponse = await fetch(`${apiBase}/api/session`, {
+            method: "POST",
+            headers: authPayload.token ? { Authorization: `Bearer ${authPayload.token}` } : undefined
+          });
+          const sessionPayload = await sessionResponse.json().catch(() => ({}));
+          if (sessionPayload?.sessionId) {
+            window.localStorage.setItem("convertix-session-id", sessionPayload.sessionId);
+          }
+        } catch {
+          // ignore session logging errors for now
+        }
+        const pendingPlan = window.localStorage.getItem("convertix-selected-plan");
+        window.location.href = pendingPlan ? `/dashboard?plan=${pendingPlan}` : "/dashboard";
+      };
+
       if (!response.ok) {
+        if (mode === "register" && response.status === 409) {
+          const loginRes = await fetch(`${apiBase}/api/users/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+          const loginPayload = await loginRes.json().catch(() => ({}));
+          if (!loginRes.ok) {
+            setError(loginPayload?.error ?? "Account exists but sign in failed.");
+            return;
+          }
+          await finalizeAuth(loginPayload);
+          return;
+        }
         setError(payload?.error ?? "Unable to sign in.");
         return;
       }
-      setStatus(`Success. User ID: ${payload.userId}`);
-      window.localStorage.setItem("convertix-user-id", payload.userId);
-      if (payload.token) {
-        window.localStorage.setItem("convertix-auth-token", payload.token);
-      }
-      try {
-        const sessionResponse = await fetch(`${apiBase}/api/session`, {
-          method: "POST",
-          headers: payload.token ? { Authorization: `Bearer ${payload.token}` } : undefined
-        });
-        const sessionPayload = await sessionResponse.json().catch(() => ({}));
-        if (sessionPayload?.sessionId) {
-          window.localStorage.setItem("convertix-session-id", sessionPayload.sessionId);
-        }
-      } catch {
-        // ignore session logging errors for now
-      }
-      const pendingPlan = window.localStorage.getItem("convertix-selected-plan");
-      if (pendingPlan) {
-        window.location.href = `/dashboard?plan=${pendingPlan}`;
-        return;
-      }
+
+      await finalizeAuth(payload);
     } catch {
       setError("Network error. Please try again.");
     } finally {

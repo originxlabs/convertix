@@ -78,16 +78,38 @@ export default function GetStartedPage() {
         body: JSON.stringify({ email, password, orgId: orgId || undefined })
       });
       const payload = await response.json().catch(() => ({}));
+      const finalizeAuth = (authPayload: { userId?: string; token?: string }, message: string) => {
+        if (!authPayload?.userId) {
+          setError("Unable to sign in. Please try again.");
+          return;
+        }
+        window.localStorage.setItem("convertix-user-id", authPayload.userId);
+        if (authPayload.token) {
+          window.localStorage.setItem("convertix-auth-token", authPayload.token);
+        }
+        setStatus(message);
+        window.location.href = "/dashboard";
+      };
+
       if (!response.ok) {
+        if (response.status === 409) {
+          const loginRes = await fetch(`${apiBase}/api/users/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+          const loginPayload = await loginRes.json().catch(() => ({}));
+          if (!loginRes.ok) {
+            setError(loginPayload?.error ?? "Account exists but sign in failed.");
+            return;
+          }
+          finalizeAuth(loginPayload, "Account already exists. Redirecting to dashboard…");
+          return;
+        }
         setError(payload?.error ?? "Unable to create account.");
         return;
       }
-      window.localStorage.setItem("convertix-user-id", payload.userId);
-      if (payload.token) {
-        window.localStorage.setItem("convertix-auth-token", payload.token);
-      }
-      setStatus("Account created. Redirecting to dashboard…");
-      window.location.href = "/dashboard";
+      finalizeAuth(payload, "Account created. Redirecting to dashboard…");
     } catch {
       setError("Network error. Please try again.");
     } finally {
