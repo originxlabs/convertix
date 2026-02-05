@@ -38,6 +38,11 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Debug ACR vars
+        run: |
+          echo "ACR_NAME=${{ secrets.ACR_NAME }}"
+          echo "ACR_LOGIN_SERVER=${{ secrets.ACR_LOGIN_SERVER }}"
+
       # -----------------------------
       # 3. Build + Push Image (ACR build)
       # -----------------------------
@@ -48,7 +53,6 @@ jobs:
             -t "${{ env.IMAGE_NAME }}:latest" \
             -f services/image-engine/Dockerfile \
             .
-
       # -----------------------------
       # 6. Deploy to App Service
       # -----------------------------
