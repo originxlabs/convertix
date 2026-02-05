@@ -1,5 +1,3 @@
-
-
 export async function checkPlaywright() {
   try {
     const { chromium } = await import("playwright");

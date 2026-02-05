@@ -6,7 +6,6 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { chromium } from "playwright";
 import { checkPlaywright } from "./health.js";
 
 const app = express();
@@ -346,6 +345,7 @@ app.post("/image/html-to-image", async (req, res) => {
   }
 
   try {
+    const { chromium } = await import("playwright");
     const browser = await chromium.launch();
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle" });
@@ -370,6 +370,7 @@ app.post("/image/html-to-pdf", async (req, res) => {
   }
 
   try {
+    const { chromium } = await import("playwright");
     const browser = await chromium.launch();
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle" });
