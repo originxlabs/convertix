@@ -371,6 +371,7 @@ app.post("/image/html-to-pdf", async (req, res) => {
 
   try {
     const { chromium } = await import("playwright");
+    
     const browser = await chromium.launch();
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle" });
