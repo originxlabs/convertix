@@ -7,7 +7,6 @@ on:
       - services/image-engine/**
 
 permissions:
-  id-token: write
   contents: read
 
 concurrency:
@@ -37,6 +36,9 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Set subscription
+        run: |
+          az account set --subscription "3b320191-f647-4cfa-8446-b08e3c87dc8e"
 
       - name: Debug ACR vars
         run: |
@@ -56,16 +58,11 @@ jobs:
       # -----------------------------
       # 6. Deploy to App Service
       # -----------------------------
-      - name: Ensure Image Engine App Service exists
+      - name: Verify Image Engine App Service
         run: |
-          if ! az webapp show --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}" >/dev/null 2>&1; then
-            az webapp create \
-              --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-              --plan "${{ secrets.AZURE_APP_SERVICE_PLAN }}" \
-              --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}" \
-              --deployment-container-image-name "$ACR_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest"
-          fi
-
+          az webapp show \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ secrets.AZURE_IMAGE_ENGINE_APP_NAME }}"
       - name: Configure container settings
         run: |
           az webapp config container set \
