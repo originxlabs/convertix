@@ -12,7 +12,7 @@ import { checkPlaywright } from "./health.js";
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-const PORT = process.env.IMAGE_ENGINE_PORT || 7071;
+const PORT = process.env.PORT || process.env.WEBSITES_PORT || 7071;
 const TMP_DIR = path.join(os.tmpdir(), "convertix-image-engine");
 fs.mkdirSync(TMP_DIR, { recursive: true });
 
@@ -384,6 +384,7 @@ app.post("/image/html-to-pdf", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Convertix image engine running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Convertix image engine running on port ${PORT}`);
 });
+
