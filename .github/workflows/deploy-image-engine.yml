@@ -85,13 +85,20 @@ jobs:
       - name: Health check
         run: |
           echo "⏳ Waiting for image engine..."
-          for i in {1..12}; do
-            if curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" >/dev/null; then
+          for i in {1..24}; do
+            if curl -fsS --max-time 6 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health" >/dev/null; then
               echo "✅ Image Engine is healthy"
+              echo "🔎 Tools status:"
+              curl -sS --max-time 10 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" || true
               exit 0
             fi
             echo "…still starting ($i)"
             sleep 10
           done
           echo "❌ Image Engine failed to start"
+          echo "🔎 Last /health response:"
+          curl -sS --max-time 10 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health" || true
+          echo
+          echo "🔎 Last /health/tools response:"
+          curl -sS --max-time 10 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" || true
           exit 1

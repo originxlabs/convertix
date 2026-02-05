@@ -276,16 +276,23 @@ jobs:
       # -----------------------------
       - name: Smoke test image engine
         run: |
-          echo "⏳ Waiting for image engine /health/tools..."
-          for i in {1..18}; do
-            if curl -fs "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" >/dev/null; then
+          echo "⏳ Waiting for image engine /health..."
+          for i in {1..24}; do
+            if curl -fsS --max-time 6 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health" >/dev/null; then
               echo "✅ Image engine is healthy"
+              echo "🔎 Tools status:"
+              curl -sS --max-time 10 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" || true
               exit 0
             fi
             echo "…image engine not ready yet ($i)"
             sleep 10
           done
           echo "❌ Image engine did not become healthy in time"
+          echo "🔎 Last /health response:"
+          curl -sS --max-time 10 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health" || true
+          echo
+          echo "🔎 Last /health/tools response:"
+          curl -sS --max-time 10 "${{ secrets.IMAGE_ENGINE_BASE_URL }}/health/tools" || true
           exit 1
 
       # -----------------------------
