@@ -5,6 +5,7 @@ export async function checkPlaywright() {
     await browser.close();
     return true;
   } catch {
+    
     return false;
   }
 }
