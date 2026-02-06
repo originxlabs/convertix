@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { deleteHistoryItem, getHistoryBlob, getHistoryItems, type HistoryMeta } from "@/lib/historyStore";
@@ -39,7 +40,7 @@ export default function HistoryGallery() {
       active = false;
       Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [items]);
+  }, [items, previews]);
 
   const handleDownload = async (item: HistoryMeta) => {
     const blob = await getHistoryBlob(item.id);
@@ -104,7 +105,7 @@ export default function HistoryGallery() {
               </div>
               <div className="mt-4 flex h-36 items-center justify-center rounded-xl border border-obsidian-100 bg-obsidian-50">
                 {item.kind === "image" && previews[item.id] ? (
-                  <img src={previews[item.id]} alt={item.name} className="max-h-32 rounded-lg" />
+                  <Image src={previews[item.id]} alt={item.name} className="max-h-32 rounded-lg object-cover" width={180} height={128} />
                 ) : (
                   <div className="text-xs text-obsidian-500">
                     {item.kind === "archive"

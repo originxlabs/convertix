@@ -30,6 +30,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: 'Convertix',
+              operatingSystem: 'Web, Windows, macOS',
+              applicationCategory: 'BusinessApplication',
+              offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+              url: 'https://convertix.app',
+              description: 'AI-ready PDF and image studio with enterprise-grade workflows',
+              creator: { '@type': 'Organization', name: 'Convertix' }
+            })
+          }}
+        />
+</head>
       <body
         className={`min-h-screen bg-obsidian-50 font-body text-ink-950 ${display.variable} ${body.variable}`}
       >

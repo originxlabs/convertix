@@ -1,4 +1,5 @@
 "use client";
+import NextImage from "next/image";
 
 import { useMemo, useRef, useState } from "react";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -202,7 +203,7 @@ export default function MergePdfTool() {
             >
               <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-obsidian-100 bg-obsidian-50">
                 {item.thumbnail ? (
-                  <img src={item.thumbnail} alt={item.name} className="h-full w-full object-cover" />
+                  <NextImage src={item.thumbnail} alt={item.name} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-obsidian-400">
                     Preview

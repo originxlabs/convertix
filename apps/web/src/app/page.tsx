@@ -16,20 +16,46 @@ export default function Home() {
         <div className="hero-content">
           <div className="hero-pill fade-in">
             <span className="hero-pill__icon" aria-hidden="true">✦</span>
-            Unified Conversion Studio
+            #1 AI-ready document & image platform
           </div>
           <h1 className="hero-title fade-in">CONVERTIX</h1>
-          <p className="hero-subtitle fade-in">A conversion studio where work continues.</p>
+          <p className="hero-subtitle fade-in">Ship-grade PDF and image ops with AI assistance, zero vendor lock-in, and enterprise trust.</p>
           <div className="hero-cta-row fade-in">
             <Link href="/get-started" className="hero-cta hero-cta--primary">
-              Open Studio →
-            </Link>
-            <Link href="/studios" className="hero-cta hero-cta--ghost">
-              Watch Demo
+              Start free →
             </Link>
             <Link href="/get-started" className="hero-cta hero-cta--link">
-              Download Desktop
+              Download desktop
             </Link>
+          </div>
+          <div className="hero-marquee" aria-hidden="true">
+            <div className="hero-marquee__track">
+              {[
+                "Merge PDF ↔️ JPG to PDF",
+                "Compress PDF • 42% smaller",
+                "OCR + Searchable PDFs",
+                "Resize & Upscale Images",
+                "Watermark & Protect",
+                "Rotate, Split, Flatten",
+                "NoteFlowLM: Ask any doc"
+              ].map((item) => (
+                <div key={`track-a-${item}`} className="hero-marquee__card">
+                  {item}
+                </div>
+              ))}
+            </div>
+            <div className="hero-marquee__track hero-marquee__track--delayed">
+              {[
+                "Batch exports",
+                "Desktop + Web sync",
+                "Zero vendor lock-in",
+                "Secure by default"
+              ].map((item) => (
+                <div key={`track-b-${item}`} className="hero-marquee__card">
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
           <div className="landing-hero__downloads fade-in">
             <Link href="/get-started" className="download-chip" aria-label="Download for Windows">
@@ -64,6 +90,13 @@ export default function Home() {
                 <div className="device-file">Report.docx</div>
               </div>
               <div className="device-canvas">
+                <div className="device-screen">
+                  <div className="screen-glow" />
+                  <div className="screen-bar screen-bar--wide" />
+                  <div className="screen-bar screen-bar--mid" />
+                  <div className="screen-bar screen-bar--thin" />
+                  <div className="screen-grid" />
+                </div>
                 <div className="device-preview">
                   <div className="device-preview__stack">
                     <span className="page-thumb page-thumb--active" />
@@ -115,6 +148,11 @@ export default function Home() {
           </div>
           <div className="device-phone">
             <div className="device-phone__notch" />
+            <div className="device-phone__screen">
+              <div className="screen-bar screen-bar--thin" />
+              <div className="screen-bar screen-bar--mid" />
+              <div className="screen-bar screen-bar--tiny" />
+            </div>
             <div className="device-phone__card">
               <div className="device-card__icon">📄</div>
               <div className="device-card__title">Upload</div>
@@ -123,6 +161,11 @@ export default function Home() {
             <div className="device-label">iPhone</div>
           </div>
           <div className="device-tablet">
+            <div className="device-tablet__screen">
+              <div className="screen-bar screen-bar--wide" />
+              <div className="screen-bar screen-bar--mid" />
+              <div className="screen-bar screen-bar--thin" />
+            </div>
             <div className="device-tablet__card">
               <div className="device-card__icon">📄</div>
               <div className="device-card__title">Upload</div>
@@ -133,12 +176,32 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="partner-strip" aria-label="Trusted partners">
+        <div className="partner-strip__label">Trusted by modern teams</div>
+        <div className="partner-marquee">
+          <div className="partner-marquee__track">
+            {["azure", "aws", "vercel", "stripe", "razorpay"].map((logo) => (
+              <div key={`p-a-${logo}`} className="partner-chip">
+                <img src={`/partners/${logo}.svg`} alt={`${logo} logo`} loading="lazy" />
+              </div>
+            ))}
+          </div>
+          <div className="partner-marquee__track partner-marquee__track--delayed">
+            {["stripe", "razorpay", "azure", "aws", "vercel"].map((logo) => (
+              <div key={`p-b-${logo}`} className="partner-chip">
+                <img src={`/partners/${logo}.svg`} alt={`${logo} logo`} loading="lazy" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="landing-section">
         <div className="landing-section__header">
           <h2>Studios</h2>
           <p>Three products. One quiet standard of quality.</p>
         </div>
-        <div className="landing-triad">
+        <div className="landing-triad landing-triad--marketing">
           <div className="studio-card">
             <h3>PDF Studio</h3>
             <p>Professional-grade PDF workflows.</p>
@@ -172,70 +235,83 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="landing-section">
+      <section className="landing-section landing-section--accent">
         <div className="landing-section__header">
-          <h2>Built like infrastructure. Designed like a product.</h2>
+          <h2>Why Convertix ranks first</h2>
+          <p>Built like infrastructure. Designed like a product. Tuned for SEO and AI agents.</p>
         </div>
-        <div className="landing-columns">
-          <div>
-            <h4>Precision</h4>
-            <p>Deterministic engines and predictable outputs, every time.</p>
-          </div>
-          <div>
-            <h4>Control</h4>
-            <p>Tier-based capabilities with enterprise-grade security.</p>
-          </div>
-          <div>
-            <h4>Intelligence</h4>
-            <p>AI where it adds value, never mandatory.</p>
-          </div>
+        <div className="marketing-grid">
+          {[
+            { title: "Performance", body: "Sub-2s interactive loads with edge-cached assets.", meta: "Core Web Vitals tuned", icon: "⚡" },
+            { title: "Control", body: "Tiered security, deterministic engines, audit-friendly logs.", meta: "Enterprise posture", icon: "🛡️" },
+            { title: "Search visibility", body: "Semantic copy + blazing TTFB for crawlers and humans.", meta: "Sitemap + SSR", icon: "🔍" },
+            { title: "AI-friendly", body: "Structured outputs ready for AI agents and RAG pipelines.", meta: "Embeddings-ready", icon: "🤖" },
+            { title: "Design polish", body: "Premium UX inspired by iLovePDF and Stripe-level craft.", meta: "Microinteractions", icon: "✨" },
+            { title: "Global scale", body: "Edge delivery, signed URLs, zero vendor lock-in.", meta: "Cloud-native", icon: "🌐" }
+          ].map((item, idx) => (
+            <div key={item.title} className="marketing-card fade-up" style={{ animationDelay: `${idx * 80}ms` }}>
+              <div className="marketing-card__icon">{item.icon}</div>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+              <span>{item.meta}</span>
+            </div>
+          ))}
         </div>
       </section>
 
       <section className="landing-section">
         <div className="landing-section__header">
           <h2>Technical confidence</h2>
+          <p>Infra-grade guarantees with product-level polish.</p>
         </div>
-        <div className="landing-chips">
-          <span>.NET Core backend</span>
-          <span>Linux-first</span>
-          <span>Cloud-native</span>
-          <span>Pluggable AI</span>
-          <span>Zero vendor lock-in</span>
+        <div className="pill-grid">
+          {[".NET Core backend", "Linux-first", "Cloud-native", "Pluggable AI", "Zero vendor lock-in", "Signed URLs", "Edge resizing"].map((item) => (
+            <div key={item} className="pill-card">{item}</div>
+          ))}
         </div>
       </section>
 
       <section className="landing-section">
         <div className="landing-section__header">
           <h2>Use cases</h2>
+          <p>Built for the real workflows you ship every day.</p>
         </div>
-        <div className="landing-columns">
-          <div>
-            <h4>Teams handling sensitive documents</h4>
-            <p>Secure workflows that respect privacy without slowing delivery.</p>
-          </div>
-          <div>
-            <h4>Creators managing assets at scale</h4>
-            <p>Clean conversion and optimization pipelines for modern content.</p>
-          </div>
-          <div>
-            <h4>Professionals and researchers thinking with PDFs</h4>
-            <p>Query, analyze, and summarize knowledge inside your documents.</p>
-          </div>
+        <div className="usecase-grid">
+          {[
+            { title: "Teams handling sensitive documents", body: "Secure workflows that respect privacy without slowing delivery." },
+            { title: "Creators managing assets at scale", body: "Clean conversion and optimization pipelines for modern content." },
+            { title: "Professionals and researchers thinking with PDFs", body: "Query, analyze, and summarize knowledge inside your documents." }
+          ].map((item, idx) => (
+            <div key={item.title} className="usecase-card fade-up" style={{ animationDelay: `${idx * 80}ms` }}><div className="usecase-card__title">{item.title}</div><p>{item.body}</p></div>
+          ))}
         </div>
       </section>
 
-      <section className="landing-section">
+      <section className="landing-section landing-section--pricing">
         <div className="landing-section__header">
           <h2>Start free. Upgrade when you need power.</h2>
+          <p>Same pricing you see on the pricing page — kept in sync.</p>
         </div>
-        <div className="landing-pricing">
-          <div className="pricing-card">Free</div>
-          <div className="pricing-card">Pro</div>
-          <div className="pricing-card">Enterprise</div>
+        <div className="pricing-preview">
+          {[
+            { id: "free", name: "Free", price: "₹0", cadence: "/ month", note: "For quick tasks & first-time users." },
+            { id: "pro", name: "Pro", price: "₹199", cadence: "/ month", note: "₹1,999 / year (Save 20%). Built for daily productivity." },
+            { id: "enterprise", name: "Enterprise", price: "₹999", cadence: "/ month per user", note: "₹9,999 / year per user. For teams & businesses." }
+          ].map((plan, idx) => (
+            <div key={plan.id} className="pricing-preview__card fade-up" style={{ animationDelay: `${idx * 60}ms` }}>
+              <div className="pricing-preview__price">
+                {plan.price} <span>{plan.cadence}</span>
+              </div>
+              <div className="pricing-preview__name">{plan.name}</div>
+              <div className="pricing-preview__note">{plan.note}</div>
+              <Link href={`/pricing#${plan.id}`} className="pricing-preview__cta">
+                Choose {plan.name}
+              </Link>
+            </div>
+          ))}
         </div>
-        <Link href="/pricing" className="landing-ghost">
-          View pricing →
+        <Link href="/pricing" className="landing-cta">
+          View full pricing →
         </Link>
       </section>
 

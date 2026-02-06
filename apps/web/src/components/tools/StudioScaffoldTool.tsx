@@ -50,6 +50,15 @@ export default function StudioScaffoldTool({
     setIsWorking(true);
     setStatus("Preparing conversion...");
     try {
+      const first = files[0];
+      if (!first) {
+        setStatus("Please add a PDF to convert.");
+        return;
+      }
+      if (!first.type.includes("pdf")) {
+        setStatus("Only PDF files are supported for this conversion.");
+        return;
+      }
       const apiBase = getApiBase();
       const formData = new FormData();
       if (multiple || files.length > 1) {

@@ -1,0 +1,5 @@
+<svg width="120" height="40" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <path d="M12 31 25 6h10L16 31H12Z" fill="#0078D4"/>
+  <path d="M30 31h-9l19-25h11L30 31Z" fill="#5EB1FF"/>
+  <text x="55" y="26" fill="#111" font-family="Manrope, Arial, sans-serif" font-size="16" font-weight="700">Azure</text>
+</svg>

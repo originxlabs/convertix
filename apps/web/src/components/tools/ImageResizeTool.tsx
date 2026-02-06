@@ -1,4 +1,5 @@
 "use client";
+import NextImage from "next/image";
 
 import { useMemo, useRef, useState } from "react";
 
@@ -21,7 +22,8 @@ export default function ImageResizeTool() {
   const ratio = useMemo(() => {
     if (!originalSize.current.width || !originalSize.current.height) return 1;
     return originalSize.current.width / originalSize.current.height;
-  }, [imageSrc]);
+  }, []); // ratio updates after load; refs set inside handlers
+
 
   const handlePick = () => fileInputRef.current?.click();
 
@@ -30,7 +32,7 @@ export default function ImageResizeTool() {
     reader.onload = () => {
       const src = reader.result?.toString() ?? null;
       if (!src) return;
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         originalSize.current = { width: img.width, height: img.height };
         setWidth(img.width);
@@ -61,7 +63,7 @@ export default function ImageResizeTool() {
 
   const handleExport = async () => {
     if (!imageSrc) return;
-    const img = new Image();
+    const img = new window.Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
       canvas.width = width;
@@ -117,7 +119,7 @@ export default function ImageResizeTool() {
         />
         <div className="mt-6 flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-obsidian-200 bg-obsidian-50">
           {imageSrc ? (
-            <img src={imageSrc} alt="Uploaded" className="max-h-[360px] max-w-full rounded-xl" />
+            <NextImage src={imageSrc} alt="Uploaded" className="max-h-[360px] max-w-full rounded-xl" width={900} height={600} />
           ) : (
             <div className="text-sm text-obsidian-500">Drop an image to begin resizing.</div>
           )}

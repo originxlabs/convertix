@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import ToolIcon, { type ToolIconName } from "@/components/ToolIcon";
 import { getApiBase } from "@/lib/apiBase";
+// theme toggle removed for light-only mode
 
 export default function AppHeader() {
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">(
@@ -209,7 +210,7 @@ export default function AppHeader() {
     <header className="landing-nav">
       <div className="landing-nav__inner">
         <Link href="/" className="landing-nav__brand">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-ink-900/10 bg-white">
+          <span className="logo-badge inline-flex h-8 w-8 items-center justify-center rounded-full border">
             <Image
               src="/convertix-logo-dark.svg"
               alt="Convertix"
